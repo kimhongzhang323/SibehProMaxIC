@@ -119,6 +119,57 @@ class _ChatPageState extends State<ChatPage> {
     ));
   }
 
+  void _startNewChat() {
+    // Save current session if there are user messages
+    final hasUserMessages = _messages.any((m) => m.isUser);
+    if (hasUserMessages) {
+      _saveCurrentSession();
+    }
+    // Start fresh
+    setState(() {
+      _currentSessionId = DateTime.now().millisecondsSinceEpoch.toString();
+      _showSuggestions = true;
+      _addWelcomeMessage();
+    });
+    _showSnackBar('New chat started');
+  }
+
+  Future<void> _saveCurrentSession() async {
+    if (_messages.isEmpty) return;
+    try {
+      final title = _messages.firstWhere((m) => m.isUser, orElse: () => _messages.first).content;
+      await http.post(
+        Uri.parse('$_backendUrl/history/save'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'session_id': _currentSessionId,
+          'user_id': 'default',
+          'title': title.length > 50 ? '${title.substring(0, 47)}...' : title,
+          'messages': _messages.map((m) => {
+            'content': m.content,
+            'isUser': m.isUser,
+            'timestamp': DateTime.now().toIso8601String(),
+          }).toList(),
+        }),
+      );
+    } catch (e) {
+      debugPrint('Save session error: $e');
+    }
+  }
+
+  void _showSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
   List<String> _getQuickActions() {
     final actions = {
       'english': ["🪪 I lost my IC", "📍 Find nearest JPN", "🌐 JPN Website", "📘 Lost passport"],
@@ -161,10 +212,6 @@ class _ChatPageState extends State<ChatPage> {
     } catch (e) {
       setState(() => _isSpeaking = false);
     }
-  }
-
-  void _showSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message), backgroundColor: Colors.black87, duration: const Duration(seconds: 2)));
   }
 
   void _openUrl(String url) {
@@ -385,6 +432,70 @@ class _ChatPageState extends State<ChatPage> {
     );
   }
 
+  /// Build formatted text with emoji colors, bold (**text**), and italic (*text*)
+  Widget _buildFormattedText(String text, bool isUser) {
+    final List<InlineSpan> spans = [];
+    final baseStyle = TextStyle(
+      color: Colors.white.withAlpha(242),
+      fontSize: 16,
+      height: 1.5,
+      fontWeight: isUser ? FontWeight.w600 : FontWeight.w500,
+    );
+    
+    // Pattern for **bold**, *italic*, and emojis
+    final pattern = RegExp(
+      r'(\*\*[^*]+\*\*)|'  // **bold**
+      r'(\*[^*]+\*)|'       // *italic*
+      r'([\u{1F300}-\u{1FAD6}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}✅❌⚠️🔒📍📋📎📊⏭️🤖💡⚡🎉]+)|'  // emojis
+      r'([^*\u{1F300}-\u{1FAD6}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}✅❌⚠️🔒📍📋📎📊⏭️🤖💡⚡🎉]+)',  // regular text
+      unicode: true,
+    );
+    
+    final matches = pattern.allMatches(text);
+    
+    for (final match in matches) {
+      final matchedText = match.group(0) ?? '';
+      
+      if (matchedText.startsWith('**') && matchedText.endsWith('**')) {
+        // Bold text
+        spans.add(TextSpan(
+          text: matchedText.substring(2, matchedText.length - 2),
+          style: baseStyle.copyWith(fontWeight: FontWeight.w800),
+        ));
+      } else if (matchedText.startsWith('*') && matchedText.endsWith('*') && matchedText.length > 2) {
+        // Italic text
+        spans.add(TextSpan(
+          text: matchedText.substring(1, matchedText.length - 1),
+          style: baseStyle.copyWith(fontStyle: FontStyle.italic),
+        ));
+      } else if (_isEmoji(matchedText)) {
+        // Emoji - don't apply color override, let native emoji colors show
+        spans.add(TextSpan(
+          text: matchedText,
+          style: const TextStyle(fontSize: 16, height: 1.5),
+        ));
+      } else {
+        // Regular text
+        spans.add(TextSpan(text: matchedText, style: baseStyle));
+      }
+    }
+    
+    if (spans.isEmpty) {
+      spans.add(TextSpan(text: text, style: baseStyle));
+    }
+    
+    return RichText(
+      text: TextSpan(children: spans),
+    );
+  }
+  
+  bool _isEmoji(String text) {
+    return RegExp(
+      r'^[\u{1F300}-\u{1FAD6}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}✅❌⚠️🔒📍📋📎📊⏭️🤖💡⚡🎉]+$',
+      unicode: true,
+    ).hasMatch(text);
+  }
+
   Widget _buildMessage(ChatMessage msg) {
     return Align(
       alignment: msg.isUser ? Alignment.centerRight : Alignment.centerLeft,
@@ -411,15 +522,7 @@ class _ChatPageState extends State<ChatPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    msg.content,
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.95),
-                      fontSize: 16,
-                      height: 1.5,
-                      fontWeight: msg.isUser ? FontWeight.w600 : FontWeight.w500,
-                    ),
-                  ),
+                  _buildFormattedText(msg.content, msg.isUser),
                   if (msg.checklist != null) ...[
                     const SizedBox(height: 12),
                     ...msg.checklist!.map((item) => _buildCheckItem(item)),
@@ -707,23 +810,47 @@ class _ChatPageState extends State<ChatPage> {
                   ),
                 ],
               ),
-              // History button
-              GestureDetector(
-                onTap: _showChatHistory,
-                child: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.white.withOpacity(0.2)),
+              // New Chat & History buttons
+              Row(
+                children: [
+                  // New Chat button
+                  GestureDetector(
+                    onTap: _startNewChat,
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withAlpha(31),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.white.withAlpha(51)),
+                      ),
+                      child: Icon(
+                        Icons.add_comment,
+                        color: Colors.white.withAlpha(230),
+                        size: 20,
+                      ),
+                    ),
                   ),
-                  child: Icon(
-                    Icons.history,
-                    color: Colors.white.withOpacity(0.9),
-                    size: 22,
+                  const SizedBox(width: 8),
+                  // History button
+                  GestureDetector(
+                    onTap: _showChatHistory,
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withAlpha(31),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.white.withAlpha(51)),
+                      ),
+                      child: Icon(
+                        Icons.history,
+                        color: Colors.white.withAlpha(230),
+                        size: 22,
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
             ],
           ),

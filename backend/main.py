@@ -18,6 +18,7 @@ Modular Structure:
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
+from pydantic import BaseModel
 import httpx
 import json
 import re
@@ -159,13 +160,18 @@ async def simple_chat(request: ChatRequest):
     return {"response": str(result)}
 
 
+class TTSRequest(BaseModel):
+    text: str
+    language: str = "english"
+
+
 @app.post("/tts")
-async def text_to_speech(text: str, language: str = "english"):
+async def text_to_speech(request: TTSRequest):
     """Text-to-speech using ElevenLabs"""
     if not ELEVENLABS_API_KEY:
         raise HTTPException(status_code=500, detail="ElevenLabs API key not configured")
     
-    voice_id = VOICE_IDS.get(language.lower(), VOICE_IDS["english"])
+    voice_id = VOICE_IDS.get(request.language.lower(), VOICE_IDS["english"])
     
     async with httpx.AsyncClient(timeout=30.0) as client:
         response = await client.post(
@@ -175,7 +181,7 @@ async def text_to_speech(text: str, language: str = "english"):
                 "Content-Type": "application/json"
             },
             json={
-                "text": text,
+                "text": request.text,
                 "model_id": "eleven_multilingual_v2",
                 "voice_settings": {"stability": 0.5, "similarity_boost": 0.75}
             }
@@ -228,6 +234,56 @@ async def get_locations(service: str, lat: float = 3.139, lng: float = 101.6869)
         return {
             "service": service_info["name"],
             "locations": locations,
+            "website": service_info["website"],
+            "hotline": service_info["hotline"]
+        }
+
+
+class FindOfficeRequest(BaseModel):
+    service: str
+    latitude: float = 3.139
+    longitude: float = 101.6869
+
+
+@app.post("/find-office")
+async def find_office(request: FindOfficeRequest):
+    """Find nearby government office - POST version for frontend"""
+    if not GOOGLE_MAPS_API_KEY:
+        raise HTTPException(status_code=500, detail="Google Maps API key not configured")
+    
+    service_info = GOVERNMENT_SERVICES.get(request.service.lower())
+    if not service_info:
+        raise HTTPException(status_code=404, detail=f"Unknown service: {request.service}")
+    
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        response = await client.get(
+            "https://maps.googleapis.com/maps/api/place/nearbysearch/json",
+            params={
+                "location": f"{request.latitude},{request.longitude}",
+                "radius": 10000,
+                "keyword": service_info["search_term"],
+                "key": GOOGLE_MAPS_API_KEY
+            }
+        )
+        
+        if response.status_code != 200:
+            raise HTTPException(status_code=response.status_code, detail="Maps API error")
+        
+        data = response.json()
+        results = []
+        for place in data.get("results", [])[:5]:
+            results.append({
+                "name": place.get("name"),
+                "address": place.get("vicinity"),
+                "lat": place.get("geometry", {}).get("location", {}).get("lat"),
+                "lng": place.get("geometry", {}).get("location", {}).get("lng"),
+                "rating": place.get("rating"),
+                "open_now": place.get("opening_hours", {}).get("open_now")
+            })
+        
+        return {
+            "service": service_info["name"],
+            "results": results,
             "website": service_info["website"],
             "hotline": service_info["hotline"]
         }
@@ -390,6 +446,33 @@ def delete_task(task_id: str):
         raise HTTPException(status_code=404, detail=f"Task not found: {task_id}")
     del active_tasks[task_id]
     return {"message": f"Task deleted: {task_id}"}
+
+
+# ============== USER ID ENDPOINTS ==============
+
+@app.get("/user/id")
+def get_digital_id(user_id: str = "default"):
+    """Get digital ID data for ID page"""
+    User = Query()
+    user = users_table.get(User.user_id == user_id)
+    
+    if user:
+        return {
+            "name": user.get("full_name", "Unknown"),
+            "id_number": user.get("ic_number", "000000-00-0000"),
+            "country": "Malaysia",
+            "qr_data": f"did:my:{user.get('ic_number', '')}:verify",
+            "valid_until": "2030-12-31"
+        }
+    
+    # Return sample data if no user found
+    return {
+        "name": "Ahmad bin Abdullah",
+        "id_number": "900115-14-5678",
+        "country": "Malaysia",
+        "qr_data": "did:my:900115145678:verify",
+        "valid_until": "2030-12-31"
+    }
 
 
 # ============== USER PROFILE ENDPOINTS ==============
