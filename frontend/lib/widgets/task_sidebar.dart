@@ -67,11 +67,7 @@ class _TaskButtonState extends State<TaskButton> with SingleTickerProviderStateM
       builder: (context) => Container(
         padding: const EdgeInsets.all(24),
         decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFF1A1A2E), Color(0xFF16213E)],
-          ),
+          color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: Column(
@@ -82,7 +78,7 @@ class _TaskButtonState extends State<TaskButton> with SingleTickerProviderStateM
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.white.withAlpha(51),
+                color: Colors.grey[300],
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -91,7 +87,7 @@ class _TaskButtonState extends State<TaskButton> with SingleTickerProviderStateM
             // Title
             Row(
               children: [
-                const Icon(Icons.upload_file, color: Colors.white, size: 24),
+                const Icon(Icons.upload_file, color: Colors.black87, size: 24),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -100,7 +96,7 @@ class _TaskButtonState extends State<TaskButton> with SingleTickerProviderStateM
                       const Text(
                         'Upload Documents',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: Colors.black87,
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
@@ -109,7 +105,7 @@ class _TaskButtonState extends State<TaskButton> with SingleTickerProviderStateM
                       Text(
                         step.title,
                         style: TextStyle(
-                          color: Colors.white.withAlpha(179),
+                          color: Colors.grey[600],
                           fontSize: 14,
                         ),
                       ),
@@ -125,9 +121,9 @@ class _TaskButtonState extends State<TaskButton> with SingleTickerProviderStateM
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.white.withAlpha(13),
+                  color: Colors.grey[100],
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.white.withAlpha(26)),
+                  border: Border.all(color: Colors.grey[300]!),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -135,7 +131,7 @@ class _TaskButtonState extends State<TaskButton> with SingleTickerProviderStateM
                     Text(
                       'Required Documents:',
                       style: TextStyle(
-                        color: Colors.white.withAlpha(179),
+                        color: Colors.grey[700],
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                       ),
@@ -147,12 +143,12 @@ class _TaskButtonState extends State<TaskButton> with SingleTickerProviderStateM
                         children: [
                           Icon(Icons.check_circle_outline, 
                             size: 14, 
-                            color: Colors.white.withAlpha(128)),
+                            color: Colors.grey[500]),
                           const SizedBox(width: 8),
                           Text(
                             doc,
                             style: TextStyle(
-                              color: Colors.white.withAlpha(204),
+                              color: Colors.grey[700],
                               fontSize: 13,
                             ),
                           ),
@@ -205,7 +201,7 @@ class _TaskButtonState extends State<TaskButton> with SingleTickerProviderStateM
                           Text(
                             'PDF, Images, Docs',
                             style: TextStyle(
-                              color: Colors.white.withAlpha(128),
+                              color: Colors.white.withAlpha(200),
                               fontSize: 11,
                             ),
                           ),
@@ -253,7 +249,7 @@ class _TaskButtonState extends State<TaskButton> with SingleTickerProviderStateM
                           Text(
                             'Use Camera',
                             style: TextStyle(
-                              color: Colors.white.withAlpha(128),
+                              color: Colors.white.withAlpha(200),
                               fontSize: 11,
                             ),
                           ),
@@ -279,7 +275,7 @@ class _TaskButtonState extends State<TaskButton> with SingleTickerProviderStateM
                   'Skip for now',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: Colors.white.withAlpha(128),
+                    color: Colors.grey[500],
                     fontSize: 14,
                   ),
                 ),
@@ -451,12 +447,12 @@ class _TaskButtonState extends State<TaskButton> with SingleTickerProviderStateM
       width: 280,
       constraints: const BoxConstraints(maxHeight: 350),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1A2E),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withAlpha(25)),
+        border: Border.all(color: Colors.grey[200]!),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(100),
+            color: Colors.black.withOpacity(0.1),
             blurRadius: 24,
             offset: const Offset(0, 8),
           ),
@@ -470,7 +466,7 @@ class _TaskButtonState extends State<TaskButton> with SingleTickerProviderStateM
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
               border: Border(
-                bottom: BorderSide(color: Colors.white.withAlpha(25)),
+                bottom: BorderSide(color: Colors.grey[200]!),
               ),
             ),
             child: Row(
@@ -479,7 +475,7 @@ class _TaskButtonState extends State<TaskButton> with SingleTickerProviderStateM
                   width: 32,
                   height: 32,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF6366F1).withAlpha(50),
+                    color: const Color(0xFF6366F1).withAlpha(30),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(
@@ -491,8 +487,8 @@ class _TaskButtonState extends State<TaskButton> with SingleTickerProviderStateM
                 const SizedBox(width: 10),
                 Text(
                   'Active Tasks',
-                  style: TextStyle(
-                    color: Colors.white.withAlpha(230),
+                  style: const TextStyle(
+                    color: Colors.black87,
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
                   ),
@@ -501,7 +497,7 @@ class _TaskButtonState extends State<TaskButton> with SingleTickerProviderStateM
                 Text(
                   '${tasks.length}',
                   style: TextStyle(
-                    color: Colors.white.withAlpha(150),
+                    color: Colors.grey[600],
                     fontSize: 13,
                   ),
                 ),
@@ -552,10 +548,10 @@ class _TaskButtonState extends State<TaskButton> with SingleTickerProviderStateM
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white.withAlpha(15),
+              decoration: BoxDecoration(
+        color: Colors.grey[50],
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withAlpha(20)),
+        border: Border.all(color: Colors.grey[200]!),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -569,7 +565,7 @@ class _TaskButtonState extends State<TaskButton> with SingleTickerProviderStateM
                 child: Text(
                   task.name,
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: Colors.black87,
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                   ),
@@ -607,7 +603,7 @@ class _TaskButtonState extends State<TaskButton> with SingleTickerProviderStateM
             Text(
               'Step ${task.currentStep}: ${step.title}',
               style: TextStyle(
-                color: Colors.white.withAlpha(200),
+                color: Colors.black87,
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
               ),
@@ -621,7 +617,7 @@ class _TaskButtonState extends State<TaskButton> with SingleTickerProviderStateM
             Text(
               step.description,
               style: TextStyle(
-                color: Colors.white.withAlpha(130),
+                color: Colors.grey[600],
                 fontSize: 11,
               ),
               maxLines: 2,
@@ -666,7 +662,7 @@ class _TaskButtonState extends State<TaskButton> with SingleTickerProviderStateM
                   borderRadius: BorderRadius.circular(3),
                   child: LinearProgressIndicator(
                     value: progress,
-                    backgroundColor: Colors.white.withAlpha(30),
+                    backgroundColor: Colors.grey[200],
                     valueColor: AlwaysStoppedAnimation<Color>(
                       progress >= 0.7 ? Colors.green : const Color(0xFF6366F1),
                     ),
@@ -678,7 +674,7 @@ class _TaskButtonState extends State<TaskButton> with SingleTickerProviderStateM
               Text(
                 '${(progress * 100).toInt()}%',
                 style: TextStyle(
-                  color: Colors.white.withAlpha(140),
+                  color: Colors.grey[600],
                   fontSize: 10,
                   fontWeight: FontWeight.w600,
                 ),

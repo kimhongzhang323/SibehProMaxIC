@@ -65,9 +65,9 @@ class _GlassyButtonState extends State<GlassyButton>
                   height: widget.height,
                   padding: widget.padding,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.16),
+                    color: Colors.grey[200],
                     borderRadius: borderRadius,
-                    border: Border.all(color: Colors.white.withOpacity(0.28)),
+                    border: Border.all(color: Colors.grey[300]!),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withOpacity(0.08),
@@ -79,14 +79,8 @@ class _GlassyButtonState extends State<GlassyButton>
                   alignment: Alignment.center,
                   child: DefaultTextStyle.merge(
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: Colors.black87,
                       fontWeight: FontWeight.w600,
-                      shadows: [
-                        Shadow(
-                          color: Colors.black54,
-                          blurRadius: 2,
-                        ),
-                      ],
                     ),
                     child: widget.child,
                   ),

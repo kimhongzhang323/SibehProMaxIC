@@ -388,18 +388,8 @@ class _ChatPageState extends State<ChatPage> {
         children: [
           // Main chat area
           Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Color(0xFF0E4CFF),
-                  Color(0xFF4C3DEB),
-                  Color(0xFF0EA6C1),
-                  Color(0xFF9B59B6),
-                ],
-                stops: [0.05, 0.35, 0.65, 0.95],
-              ),
+            decoration: BoxDecoration(
+              color: Colors.grey[50],
             ),
             child: SafeArea(
               child: Column(
@@ -436,7 +426,7 @@ class _ChatPageState extends State<ChatPage> {
   Widget _buildFormattedText(String text, bool isUser) {
     final List<InlineSpan> spans = [];
     final baseStyle = TextStyle(
-      color: Colors.white.withAlpha(242),
+      color: isUser ? Colors.white : Colors.black87,
       fontSize: 16,
       height: 1.5,
       fontWeight: isUser ? FontWeight.w600 : FontWeight.w500,
@@ -446,8 +436,8 @@ class _ChatPageState extends State<ChatPage> {
     final pattern = RegExp(
       r'(\*\*[^*]+\*\*)|'  // **bold**
       r'(\*[^*]+\*)|'       // *italic*
-      r'([\u{1F300}-\u{1FAD6}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}✅❌⚠️🔒📍📋📎📊⏭️🤖💡⚡🎉]+)|'  // emojis
-      r'([^*\u{1F300}-\u{1FAD6}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}✅❌⚠️🔒📍📋📎📊⏭️🤖💡⚡🎉]+)',  // regular text
+      r'([\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}\u{1FAD0}-\u{1FAFF}]+)|'  // emojis
+      r'([^*\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}\u{1FAD0}-\u{1FAFF}]+)',  // regular text
       unicode: true,
     );
     
@@ -490,11 +480,11 @@ class _ChatPageState extends State<ChatPage> {
   }
   
   bool _isEmoji(String text) {
-    return RegExp(
-      r'^[\u{1F300}-\u{1FAD6}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}✅❌⚠️🔒📍📋📎📊⏭️🤖💡⚡🎉]+$',
-      unicode: true,
-    ).hasMatch(text);
-  }
+  return RegExp(
+    r'^[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F900}-\u{1F9FF}\u{1FAD0}-\u{1FAFF}]+$',
+    unicode: true,
+  ).hasMatch(text);
+}
 
   Widget _buildMessage(ChatMessage msg) {
     return Align(
@@ -508,9 +498,8 @@ class _ChatPageState extends State<ChatPage> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: msg.isUser ? Colors.white.withOpacity(0.12) : Colors.white.withOpacity(0.18),
+                color: msg.isUser ? Colors.black : Colors.white,
                 borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: Colors.white.withOpacity(0.16)),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.1),
@@ -576,11 +565,10 @@ class _ChatPageState extends State<ChatPage> {
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.12),
+                              color: Colors.grey[200],
                               borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: Colors.white.withOpacity(0.25)),
                             ),
-                            child: Text(a, style: const TextStyle(fontSize: 13, color: Colors.white)),
+                            child: Text(a, style: TextStyle(fontSize: 13, color: Colors.grey[700])),
                           ),
                         ),
                       )
@@ -694,10 +682,10 @@ class _ChatPageState extends State<ChatPage> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.06),
-        border: Border(top: BorderSide(color: Colors.white.withOpacity(0.08))),
+        color: Colors.white,
+        border: Border(top: BorderSide(color: Colors.grey[200]!)),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.12), blurRadius: 18, offset: const Offset(0, -4)),
+          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 18, offset: const Offset(0, -4)),
         ],
       ),
       child: SafeArea(
@@ -708,20 +696,20 @@ class _ChatPageState extends State<ChatPage> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 18),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.12),
+                  color: Colors.grey[100],
                   borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: Colors.white.withOpacity(0.2)),
+                  border: Border.all(color: Colors.grey[200]!),
                 ),
                 child: TextField(
                   controller: _controller,
-                  style: const TextStyle(color: Colors.white),
+                  style: const TextStyle(color: Colors.black87),
                   decoration: InputDecoration(
                     hintText: _selectedLanguage == 'malay'
                         ? 'Taip mesej...'
                         : _selectedLanguage == 'chinese'
                             ? '输入信息...'
                             : 'Ask Journey anything...',
-                    hintStyle: TextStyle(color: Colors.white.withOpacity(0.6)),
+                    hintStyle: TextStyle(color: Colors.grey[500]),
                     border: InputBorder.none,
                   ),
                   onSubmitted: (_) => _sendMessage(),
@@ -738,14 +726,11 @@ class _ChatPageState extends State<ChatPage> {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.16),
+                  color: _isVoiceMode ? Colors.grey[200] : Colors.transparent,
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white.withOpacity(0.3)),
-                  boxShadow: [
-                    BoxShadow(color: Colors.black.withOpacity(0.18), blurRadius: 14, offset: const Offset(0, 6)),
-                  ],
+                  border: Border.all(color: Colors.grey[300]!),
                 ),
-                child: Icon(_isVoiceMode ? Icons.mic : Icons.mic_none, color: Colors.white),
+                child: Icon(_isVoiceMode ? Icons.mic : Icons.mic_none, color: Colors.grey[700]),
               ),
             ),
             const SizedBox(width: 8),
@@ -755,14 +740,10 @@ class _ChatPageState extends State<ChatPage> {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.22),
+                  color: Colors.grey[200],
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white.withOpacity(0.3)),
-                  boxShadow: [
-                    BoxShadow(color: Colors.black.withOpacity(0.18), blurRadius: 14, offset: const Offset(0, 6)),
-                  ],
                 ),
-                child: const Icon(Icons.arrow_upward, color: Colors.white),
+                child: const Icon(Icons.arrow_upward, color: Colors.black87),
               ),
             ),
           ],
@@ -782,14 +763,27 @@ class _ChatPageState extends State<ChatPage> {
             children: [
               Row(
                 children: [
-                  Icon(Icons.auto_awesome, color: Colors.white.withOpacity(0.9), size: 20),
-                  const SizedBox(width: 6),
-                  Text(
-                    'Journey AI',
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.95),
-                      fontWeight: FontWeight.w700,
-                      fontSize: 18,
+                  ShaderMask(
+                    shaderCallback: (bounds) => const LinearGradient(
+                      colors: [Color(0xFF6366F1), Color(0xFF8B5CF6), Color(0xFFEC4899)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ).createShader(bounds),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.auto_awesome, color: Colors.white, size: 20),
+                        SizedBox(width: 8),
+                        Text(
+                          'Journey AI',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 18,
+                            color: Colors.white,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -797,12 +791,11 @@ class _ChatPageState extends State<ChatPage> {
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.white.withOpacity(0.8), width: 1),
+                      border: Border.all(color: Colors.black54, width: 1),
                     ),
-                    child: Text(
+                    child: const Text(
                       'beta',
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.9),
                         fontWeight: FontWeight.w600,
                         fontSize: 12,
                       ),
@@ -820,13 +813,13 @@ class _ChatPageState extends State<ChatPage> {
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: Colors.white.withAlpha(31),
+                        color: Colors.grey[200],
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.white.withAlpha(51)),
+                        border: Border.all(color: Colors.grey[300]!),
                       ),
                       child: Icon(
                         Icons.add_comment,
-                        color: Colors.white.withAlpha(230),
+                        color: Colors.black87,
                         size: 20,
                       ),
                     ),
@@ -839,13 +832,13 @@ class _ChatPageState extends State<ChatPage> {
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: Colors.white.withAlpha(31),
+                        color: Colors.grey[200],
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.white.withAlpha(51)),
+                        border: Border.all(color: Colors.grey[300]!),
                       ),
                       child: Icon(
                         Icons.history,
-                        color: Colors.white.withAlpha(230),
+                        color: Colors.black87,
                         size: 22,
                       ),
                     ),
@@ -855,15 +848,11 @@ class _ChatPageState extends State<ChatPage> {
             ],
           ),
           const SizedBox(height: 24),
-          Text(
+          const Text(
             'How can I help you?',
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.w700,
-              color: Colors.white.withOpacity(0.95),
-              shadows: [
-                Shadow(color: Colors.black.withOpacity(0.25), blurRadius: 12),
-              ],
             ),
           ),
           const SizedBox(height: 4),
@@ -871,7 +860,7 @@ class _ChatPageState extends State<ChatPage> {
             'Ask Journey about government services, payments, identity, and more.',
             style: TextStyle(
               fontSize: 14,
-              color: Colors.white.withOpacity(0.8),
+              color: Colors.grey,
             ),
           ),
         ],
