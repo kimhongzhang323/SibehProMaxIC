@@ -5,6 +5,7 @@ import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+
 import 'package:shared_preferences/shared_preferences.dart';
 import 'api_service.dart';
 
@@ -788,86 +789,65 @@ class _IdPageState extends State<IdPage> with TickerProviderStateMixin {
       borderRadius: BorderRadius.circular(20),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(_cardPadding),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            color: Colors.white,
-            border: Border.all(color: Colors.grey[200]!),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.08),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  // Icon for Driving Licence
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(
-                      Icons.directions_car,
-                      size: 26,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Text(
-                    'DRIVING LICENCE',
-                    style: TextStyle(
-                      color: Colors.grey[800],
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13,
-                      letterSpacing: 1.4,
-                    ),
+        child: Stack(
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(_cardPadding),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                color: Colors.white,
+                border: Border.all(color: Colors.grey[200]!),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Licence Number section
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'LICENCE NO.',
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.5,
-                          ),
+                  Row(
+                    children: [
+                      // Icon for Driving Licence
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(10),
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          maskedLicence,
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.2,
-                          ),
+                        child: const Icon(
+                          Icons.directions_car,
+                          size: 26,
+                          color: Colors.white,
                         ),
-                        const SizedBox(height: 10),
-                        // Mock: Class
-                        Row(
+                      ),
+                      const SizedBox(width: 14),
+                      Text(
+                        'DRIVING LICENCE',
+                        style: TextStyle(
+                          color: Colors.grey[800],
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                          letterSpacing: 1.4,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      // Licence Number section
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'CLASS: ',
+                              'LICENCE NO.',
                               style: TextStyle(
                                 color: Colors.grey[600],
                                 fontSize: 11,
@@ -875,62 +855,101 @@ class _IdPageState extends State<IdPage> with TickerProviderStateMixin {
                                 letterSpacing: 0.5,
                               ),
                             ),
+                            const SizedBox(height: 4),
                             Text(
-                              _idData?['licence_class'] ?? 'D',
+                              maskedLicence,
                               style: TextStyle(
                                 color: Colors.black,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0.6,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.2,
                               ),
+                            ),
+                            const SizedBox(height: 10),
+                            // Mock: Class
+                            Row(
+                              children: [
+                                Text(
+                                  'CLASS: ',
+                                  style: TextStyle(
+                                    color: Colors.grey[600],
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                                Text(
+                                  _idData?['licence_class'] ?? 'D',
+                                  style: TextStyle(
+                                    color: Colors.black,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.6,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            // Mock: Valid Until
+                            Row(
+                              children: [
+                                Text(
+                                  'VALID UNTIL: ',
+                                  style: TextStyle(
+                                    color: Colors.grey[600],
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                                Text(
+                                  _idData?['licence_expiry'] ?? '2030-12-31',
+                                  style: TextStyle(
+                                    color: Colors.black,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.6,
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
-                        const SizedBox(height: 4),
-                        // Mock: Valid Until
-                        Row(
-                          children: [
-                            Text(
-                              'VALID UNTIL: ',
-                              style: TextStyle(
-                                color: Colors.grey[600],
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                            Text(
-                              _idData?['licence_expiry'] ?? '2030-12-31',
-                              style: TextStyle(
-                                color: Colors.black,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0.6,
-                              ),
-                            ),
-                          ],
+                      ),
+                      // Coat of arms (use a suitable icon)
+                      Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[100],
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                      ],
-                    ),
-                  ),
-                  // Coat of arms (use a suitable icon)
-                  Container(
-                    width: 50,
-                    height: 50,
-                    decoration: BoxDecoration(
-                      color: Colors.grey[100],
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(
-                      Icons.badge,
-                      size: 30,
-                      color: Colors.grey[400],
-                    ),
+                        child: Icon(
+                          Icons.badge,
+                          size: 30,
+                          color: Colors.grey[400],
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
-            ],
-          ),
+            ),
+            // JPJ Logo
+            Positioned(
+              right: 20,
+              top: 20,
+              child: Image.asset(
+                'assets/images/jpj.png',
+                height: 40,
+                errorBuilder: (c, e, s) => Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(4)),
+                  child: const Text('JPJ', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -975,87 +994,117 @@ class _IdPageState extends State<IdPage> with TickerProviderStateMixin {
       borderRadius: BorderRadius.circular(20),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(_cardPadding),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            color: Colors.white,
-            border: Border.all(color: Colors.grey[200]!),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.08),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'PASSPORT / PASSPORT',
-                    style: TextStyle(
-                      color: Colors.grey[800],
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.6,
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.18),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: Colors.white.withOpacity(0.25)),
-                    ),
-                    child: Text(
-                      'Type $type',
-                      style: TextStyle(
-                        color: Colors.grey[800],
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
+        child: Stack(
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(_cardPadding),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                color: Colors.white,
+                border: Border.all(color: Colors.grey[200]!),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
-              // Name row
-              _passportDetailLine('Nama / Name', name ?? '—', bold: true),
-              const SizedBox(height: 10),
-              // Two-column concise layout
-              Row(
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _passportDetailLine('No. Pasport / Passport No.', passportNo, bold: true),
-                        const SizedBox(height: 6),
-                        _passportDetailLine('Tarikh Dikeluarkan / Date of Issue', issue),
-                      ],
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'PASSPORT / PASSPORT',
+                        style: TextStyle(
+                          color: Colors.grey[800],
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.6,
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.18),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.white.withOpacity(0.25)),
+                        ),
+                        child: Text(
+                          'Type $type',
+                          style: TextStyle(
+                            color: Colors.grey[800],
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  // Name row
+                  _passportDetailLine('Nama / Name', name ?? '—', bold: true),
+                  const SizedBox(height: 10),
+                  // Two-column concise layout
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _passportDetailLine('No. Pasport / Passport No.', passportNo, bold: true),
+                            const SizedBox(height: 6),
+                            _passportDetailLine('Tarikh Dikeluarkan / Date of Issue', issue),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _passportDetailLine('Kod Negara / Country Code', countryCode),
+                            const SizedBox(height: 8),
+                            _passportDetailLine('Tarikh Tamat / Date of Expiry', expiry, emphasize: true, color: expiryColor),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            Positioned(
+              right: 20,
+              top: 40,
+              child: Row(
+                children: [
+                   Opacity(
+                    opacity: 0.9,
+                    child: Container(
+                       width: 40, height: 40,
+                       decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: Colors.grey[200]!)),
+                       child: ClipOval(child: Image.asset('assets/images/countryFlag/my.png', fit: BoxFit.cover)),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _passportDetailLine('Kod Negara / Country Code', countryCode),
-                        const SizedBox(height: 8),
-                        _passportDetailLine('Tarikh Tamat / Date of Expiry', expiry, emphasize: true, color: expiryColor),
-                      ],
+                  const SizedBox(width: 8),
+                  Opacity(
+                    opacity: 0.9,
+                    child: Image.asset(
+                      'assets/images/immigration.png',
+                      width: 44,
+                      height: 44,
+                      errorBuilder: (context, error, stackTrace) => Container(width: 44, height: 44, color: Colors.transparent),
                     ),
                   ),
                 ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -1230,125 +1279,154 @@ class _IdPageState extends State<IdPage> with TickerProviderStateMixin {
     ]);
   }
 
+  Widget _buildAgencyBadge(String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: Colors.grey[200],
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: Text(text, style: TextStyle(color: Colors.grey[700], fontSize: 10, fontWeight: FontWeight.w700)),
+    );
+  }
+
   Widget _buildIcCard() {
     return ClipRRect(
       borderRadius: BorderRadius.circular(20),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(_cardPadding),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            color: Colors.white,
-            border: Border.all(color: Colors.grey[200]!),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Colors.white,
-                Colors.grey[50]!,
-              ],
-            ),
-            boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 18, offset: const Offset(0, 8)),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        child: Stack(
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(_cardPadding),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                color: Colors.white,
+                border: Border.all(color: Colors.grey[200]!),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.white,
+                    Colors.grey[50]!,
+                  ],
+                ),
+                boxShadow: [
+                  BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 18, offset: const Offset(0, 8)),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
-                        child: Image.asset(
-                          'assets/images/countryFlag/my.png',
-                          width: 32,
-                          height: 22,
-                          fit: BoxFit.cover,
-                          errorBuilder: (c, e, s) => Container(width: 32, height: 22, color: Colors.grey[300]),
-                        ),
+                      Row(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(4),
+                            child: Image.asset(
+                              'assets/images/countryFlag/my.png',
+                              width: 32,
+                              height: 22,
+                              fit: BoxFit.cover,
+                              errorBuilder: (c, e, s) => Container(width: 32, height: 22, color: Colors.grey[300]),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'MALAYSIA',
+                            style: TextStyle(
+                              color: Colors.grey[900],
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'MALAYSIA',
-                        style: TextStyle(
-                          color: Colors.grey[900],
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 1.2,
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.green[50],
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: Colors.green[100]!),
+                        ),
+                        child: Row(
+                          children: const [
+                            Icon(Icons.verified, color: Colors.green, size: 14),
+                            SizedBox(width: 6),
+                            Text(
+                              'VERIFIED',
+                              style: TextStyle(color: Colors.green, fontSize: 11, fontWeight: FontWeight.w700),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.green[50],
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.green[100]!),
+                  const SizedBox(height: 16),
+                  Text(
+                    'MALAYSIA',
+                    style: TextStyle(
+                      color: Colors.grey[900],
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.5,
                     ),
-                    child: Row(
-                      children: const [
-                        Icon(Icons.verified, color: Colors.green, size: 14),
-                        SizedBox(width: 6),
-                        Text(
-                          'VERIFIED',
-                          style: TextStyle(color: Colors.green, fontSize: 11, fontWeight: FontWeight.w700),
-                        ),
-                      ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'NATIONAL DIGITAL IDENTITY CARD',
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Text(
+                    _idData!['name'] ?? 'Name',
+                    style: const TextStyle(
+                      color: Colors.black,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'NRIC number',
+                    style: TextStyle(color: Colors.grey[500], fontSize: 12, fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _idData!['id_number'] ?? 'ID',
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.2,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-              Text(
-                'MALAYSIA',
-                style: TextStyle(
-                  color: Colors.grey[900],
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.5,
+            ),
+            Positioned(
+              right: 20,
+              top: 70,
+              child: Image.asset(
+                'assets/images/jpn.png',
+                height: 48,
+                errorBuilder: (c, e, s) => Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(4)),
+                  child: const Text('JPN', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
                 ),
               ),
-              const SizedBox(height: 6),
-              Text(
-                'NATIONAL DIGITAL IDENTITY CARD',
-                style: TextStyle(
-                  color: Colors.grey[600],
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 18),
-              Text(
-                _idData!['name'] ?? 'Name',
-                style: const TextStyle(
-                  color: Colors.black,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'NRIC number',
-                style: TextStyle(color: Colors.grey[500], fontSize: 12, fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                _idData!['id_number'] ?? 'ID',
-                style: TextStyle(
-                  color: Colors.black,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.2,
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
