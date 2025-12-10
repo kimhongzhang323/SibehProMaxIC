@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'jpn_page.dart';
 import 'print_ic_page.dart';
+import 'jpj_page.dart';
 
 class ServicesPage extends StatefulWidget {
   const ServicesPage({super.key});
@@ -332,7 +333,9 @@ class _ServicesPageState extends State<ServicesPage> {
                         _buildServiceIcon(
                             Icons.flight, 'Immigration', Colors.indigo),
                         _buildServiceIcon(
-                            Icons.directions_car, 'JPJ', Colors.orange),
+                            Icons.directions_car, 'JPJ', Colors.orange, onTap: () {
+                              Navigator.push(context, MaterialPageRoute(builder: (context) => const JPJPage()));
+                            }),
                         _buildServiceIcon(Icons.receipt, 'LHDN', Colors.green),
                         _buildServiceIcon(Icons.savings, 'KWSP', Colors.teal),
                         _buildServiceIcon(

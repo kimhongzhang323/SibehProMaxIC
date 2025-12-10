@@ -50,9 +50,17 @@ class _PrintIcPageState extends State<PrintIcPage> {
       final frontImage = pw.MemoryImage(frontBytes.buffer.asUint8List());
       final backImage = pw.MemoryImage(backBytes.buffer.asUint8List());
 
+      // Load Fonts
+      final font = await PdfGoogleFonts.interRegular();
+      final fontBold = await PdfGoogleFonts.interBold();
+
       doc.addPage(
         pw.Page(
           pageFormat: PdfPageFormat.a4,
+          theme: pw.ThemeData.withFont(
+            base: font,
+            bold: fontBold,
+          ),
           build: (pw.Context context) {
             return pw.Stack(
               children: [

@@ -106,6 +106,15 @@ def health():
     return {"status": "healthy"}
 
 
+@app.get("/config")
+def get_config():
+    """Get public configuration"""
+    return {
+        "google_maps_api_key": GOOGLE_MAPS_API_KEY,
+        "environment": "development"
+    }
+
+
 # ============== CHAT ENDPOINTS ==============
 
 @app.post("/chat")
