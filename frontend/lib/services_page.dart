@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'jpn_page.dart';
+import 'main.dart';
 
 class ServicesPage extends StatefulWidget {
   const ServicesPage({super.key});
@@ -29,6 +30,23 @@ class _ServicesPageState extends State<ServicesPage> {
       setState(() {
         _icRequests = decoded.map((e) => Map<String, dynamic>.from(e)).toList();
       });
+    }
+  }
+
+  Future<void> _handleLogout() async {
+    final prefs = await SharedPreferences.getInstance();
+    final cachedName = prefs.getString('cached_user_name');
+    await prefs.clear(); // Clear all
+    if (cachedName != null) {
+      await prefs.setString('cached_user_name', cachedName); // Restore name
+    }
+    await prefs.setBool('landing_page_seen', true); // Don't show intro animation again
+    
+    if (mounted) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const MyApp()),
+        (route) => false,
+      );
     }
   }
 
@@ -83,15 +101,33 @@ class _ServicesPageState extends State<ServicesPage> {
                                     fontWeight: FontWeight.bold)),
                           ],
                         ),
-                        Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: Colors.grey[100],
-                            borderRadius: BorderRadius.circular(22),
-                          ),
-                          child: const Icon(Icons.notifications_none,
-                              color: Colors.black54),
+                        Row(
+                          children: [
+                            Container(
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                color: Colors.grey[100],
+                                borderRadius: BorderRadius.circular(22),
+                              ),
+                              child: const Icon(Icons.notifications_none,
+                                  color: Colors.black54),
+                            ),
+                            const SizedBox(width: 12),
+                            GestureDetector(
+                              onTap: _handleLogout,
+                              child: Container(
+                                width: 44,
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  color: Colors.red[50],
+                                  borderRadius: BorderRadius.circular(22),
+                                ),
+                                child: Icon(Icons.logout,
+                                    color: Colors.red[700], size: 20),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),

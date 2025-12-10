@@ -1,7 +1,8 @@
-import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'widgets/glassy_button.dart';
+
 
 class OnboardingPage extends StatefulWidget {
   final VoidCallback onComplete;
@@ -840,7 +841,11 @@ class _OnboardingPageState extends State<OnboardingPage> with SingleTickerProvid
         ),
         const Spacer(),
         GlassyButton(
-          onPressed: widget.onComplete,
+          onPressed: () async {
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setString('cached_user_name', _nameController.text.trim());
+            widget.onComplete();
+          },
           borderRadius: BorderRadius.circular(16),
           child: const Text(
             'Get Started',
