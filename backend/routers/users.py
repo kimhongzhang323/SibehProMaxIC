@@ -162,6 +162,18 @@ def get_user_profile(user_id: str = "default"):
     }
 
 
+@router.get("/id")
+def get_user_id_card_data(user_id: str = "default"):
+    """Get user ID card data directly (flat structure)"""
+    User = Query()
+    user = users_table.get(User.user_id == user_id)
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    return user
+
+
 @router.post("/profile")
 def update_user_profile(user_id: str = "default", updates: dict = {}):
     """Update user profile data"""
