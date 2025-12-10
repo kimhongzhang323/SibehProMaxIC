@@ -1,0 +1,438 @@
+{
+    "_metadata": {
+        "description": "QR Code scan activity logs",
+        "version": "1.0",
+        "retention_days": 365,
+        "updated_at": "2025-12-10"
+    },
+    "scan_statistics": {
+        "user_id": "default",
+        "total_scans": 47,
+        "total_unique_organizations": 12,
+        "scans_this_month": 8,
+        "scans_today": 2,
+        "most_scanned_by": "Maybank Berhad",
+        "last_scan_at": "2025-12-10T10:15:00",
+        "first_scan_at": "2024-02-15T14:30:00"
+    },
+    "scan_logs": [
+        {
+            "scan_id": "SCN-2025-1210-001",
+            "timestamp": "2025-12-10T10:15:00",
+            "user_id": "default",
+            "who": {
+                "organization_id": "ORG005",
+                "organization_name": "GSC Cinemas",
+                "organization_type": "retail_merchant",
+                "scanner_device_id": "GSC-POS-MV-012",
+                "scanner_operator": "Staff ID: GSC-EMP-456"
+            },
+            "where": {
+                "location_name": "GSC Mid Valley Megamall",
+                "address": "Level 3, Mid Valley Megamall, Lingkaran Syed Putra, 59200 KL",
+                "city": "Kuala Lumpur",
+                "state": "Wilayah Persekutuan",
+                "country": "Malaysia",
+                "coordinates": {
+                    "latitude": 3.1178,
+                    "longitude": 101.6769
+                },
+                "ip_address": "203.106.xxx.xxx",
+                "device_type": "POS Terminal"
+            },
+            "why": {
+                "purpose": "Age verification for 18+ rated movie",
+                "purpose_category": "age_verification",
+                "reference_number": "TKT-20251210-78901",
+                "transaction_type": "movie_ticket_purchase"
+            },
+            "what": {
+                "qr_type": "digital_id",
+                "data_requested": [
+                    "age_verification"
+                ],
+                "data_provided": [
+                    "age_verification"
+                ],
+                "permission_level": "verify_only",
+                "fields_accessed": 0,
+                "verification_result": true,
+                "verification_details": "User is above 18 years old"
+            },
+            "how": {
+                "scan_method": "camera_scan",
+                "app_version": "2.1.0",
+                "qr_version": "v2",
+                "encryption_used": true,
+                "decryption_successful": true,
+                "response_time_ms": 245
+            },
+            "consent": {
+                "consent_given": true,
+                "consent_method": "biometric_approval",
+                "consent_timestamp": "2025-12-10T10:14:55",
+                "consent_expiry": null
+            },
+            "result": {
+                "status": "success",
+                "action_taken": "Ticket sale approved",
+                "error_code": null,
+                "error_message": null
+            },
+            "user_notification": {
+                "notified": true,
+                "notification_method": "push",
+                "notification_sent_at": "2025-12-10T10:15:01"
+            }
+        },
+        {
+            "scan_id": "SCN-2025-1210-002",
+            "timestamp": "2025-12-10T09:30:00",
+            "user_id": "default",
+            "who": {
+                "organization_id": "ORG002",
+                "organization_name": "Maybank Berhad",
+                "organization_type": "bank_financial",
+                "scanner_device_id": "MBB-KL-MAIN-T05",
+                "scanner_operator": "Officer: Nurul Huda (EMP-MBB-12345)"
+            },
+            "where": {
+                "location_name": "Maybank KL Main Branch",
+                "address": "Menara Maybank, 100 Jalan Tun Perak, 50050 Kuala Lumpur",
+                "city": "Kuala Lumpur",
+                "state": "Wilayah Persekutuan",
+                "country": "Malaysia",
+                "coordinates": {
+                    "latitude": 3.1480,
+                    "longitude": 101.6958
+                },
+                "ip_address": "175.136.xxx.xxx",
+                "device_type": "Banking Terminal"
+            },
+            "why": {
+                "purpose": "Personal loan application - income verification",
+                "purpose_category": "financial_service",
+                "reference_number": "LOAN-PL-2025-567890",
+                "transaction_type": "loan_application"
+            },
+            "what": {
+                "qr_type": "digital_id",
+                "data_requested": [
+                    "personal",
+                    "employment",
+                    "income_sources",
+                    "bank"
+                ],
+                "data_provided": [
+                    "personal",
+                    "employment",
+                    "income_sources"
+                ],
+                "permission_level": "full_view",
+                "fields_accessed": 15,
+                "verification_result": true,
+                "verification_details": "Identity verified, income confirmed"
+            },
+            "how": {
+                "scan_method": "nfc_tap",
+                "app_version": "2.1.0",
+                "qr_version": "v2",
+                "encryption_used": true,
+                "decryption_successful": true,
+                "response_time_ms": 1250
+            },
+            "consent": {
+                "consent_given": true,
+                "consent_method": "biometric_approval",
+                "consent_timestamp": "2025-12-10T09:28:00",
+                "consent_id": "CNS-2025-001",
+                "consent_expiry": "2025-12-31T10:30:00"
+            },
+            "result": {
+                "status": "success",
+                "action_taken": "Loan application submitted",
+                "error_code": null,
+                "error_message": null
+            },
+            "user_notification": {
+                "notified": true,
+                "notification_method": "push",
+                "notification_sent_at": "2025-12-10T09:30:05"
+            }
+        },
+        {
+            "scan_id": "SCN-2025-1209-001",
+            "timestamp": "2025-12-09T16:45:00",
+            "user_id": "default",
+            "who": {
+                "organization_id": "ORG006",
+                "organization_name": "Hilton Kuala Lumpur",
+                "organization_type": "hotel_accommodation",
+                "scanner_device_id": "HLT-KL-FD-003",
+                "scanner_operator": "Front Desk: Sarah (EMP-HLT-789)"
+            },
+            "where": {
+                "location_name": "Hilton Kuala Lumpur - Front Desk",
+                "address": "3 Jalan Stesen Sentral, KL Sentral, 50470 Kuala Lumpur",
+                "city": "Kuala Lumpur",
+                "state": "Wilayah Persekutuan",
+                "country": "Malaysia",
+                "coordinates": {
+                    "latitude": 3.1340,
+                    "longitude": 101.6866
+                },
+                "ip_address": "118.100.xxx.xxx",
+                "device_type": "Tablet"
+            },
+            "why": {
+                "purpose": "Hotel check-in identity verification",
+                "purpose_category": "identity_verification",
+                "reference_number": "RES-HLT-20251209-1234",
+                "transaction_type": "hotel_checkin"
+            },
+            "what": {
+                "qr_type": "digital_id",
+                "data_requested": [
+                    "personal.full_name",
+                    "personal.ic_number",
+                    "passport.number",
+                    "personal.nationality"
+                ],
+                "data_provided": [
+                    "personal.full_name",
+                    "personal.ic_number_masked",
+                    "personal.nationality"
+                ],
+                "permission_level": "partial_view",
+                "fields_accessed": 3,
+                "verification_result": true,
+                "verification_details": "Guest identity verified"
+            },
+            "how": {
+                "scan_method": "camera_scan",
+                "app_version": "2.1.0",
+                "qr_version": "v2",
+                "encryption_used": true,
+                "decryption_successful": true,
+                "response_time_ms": 380
+            },
+            "consent": {
+                "consent_given": true,
+                "consent_method": "tap_approve",
+                "consent_timestamp": "2025-12-09T16:44:30",
+                "consent_expiry": "2025-12-11T12:00:00"
+            },
+            "result": {
+                "status": "success",
+                "action_taken": "Check-in completed",
+                "error_code": null,
+                "error_message": null
+            },
+            "user_notification": {
+                "notified": true,
+                "notification_method": "push",
+                "notification_sent_at": "2025-12-09T16:45:02"
+            }
+        },
+        {
+            "scan_id": "SCN-2025-1208-001",
+            "timestamp": "2025-12-08T22:30:00",
+            "user_id": "default",
+            "who": {
+                "organization_id": "ORG_UNKNOWN",
+                "organization_name": "Unknown Scanner",
+                "organization_type": "unregistered",
+                "scanner_device_id": "UNKNOWN",
+                "scanner_operator": "Unknown"
+            },
+            "where": {
+                "location_name": "Unknown",
+                "address": "Unknown",
+                "city": "Shah Alam",
+                "state": "Selangor",
+                "country": "Malaysia",
+                "coordinates": {
+                    "latitude": 3.0733,
+                    "longitude": 101.5185
+                },
+                "ip_address": "60.48.xxx.xxx",
+                "device_type": "Unknown"
+            },
+            "why": {
+                "purpose": "Unknown - Suspicious scan attempt",
+                "purpose_category": "unknown",
+                "reference_number": null,
+                "transaction_type": "unknown"
+            },
+            "what": {
+                "qr_type": "digital_id",
+                "data_requested": [
+                    "personal",
+                    "bank",
+                    "passport"
+                ],
+                "data_provided": [],
+                "permission_level": "blocked",
+                "fields_accessed": 0,
+                "verification_result": false,
+                "verification_details": "Blocked - Unregistered organization"
+            },
+            "how": {
+                "scan_method": "camera_scan",
+                "app_version": null,
+                "qr_version": "v2",
+                "encryption_used": false,
+                "decryption_successful": false,
+                "response_time_ms": 50
+            },
+            "consent": {
+                "consent_given": false,
+                "consent_method": null,
+                "consent_timestamp": null,
+                "consent_expiry": null
+            },
+            "result": {
+                "status": "blocked",
+                "action_taken": "Scan rejected - reported to security",
+                "error_code": "ERR_UNREGISTERED_ORG",
+                "error_message": "Organization not registered in trusted network"
+            },
+            "user_notification": {
+                "notified": true,
+                "notification_method": "push_alert",
+                "notification_sent_at": "2025-12-08T22:30:01",
+                "alert_level": "warning"
+            },
+            "security_flags": {
+                "flagged": true,
+                "flag_reason": "Unauthorized scan attempt",
+                "reported_to": "security_team",
+                "follow_up_required": true
+            }
+        },
+        {
+            "scan_id": "SCN-2025-1205-001",
+            "timestamp": "2025-12-05T14:00:00",
+            "user_id": "default",
+            "who": {
+                "organization_id": "ORG003",
+                "organization_name": "Hospital Kuala Lumpur",
+                "organization_type": "healthcare",
+                "scanner_device_id": "HKL-REG-005",
+                "scanner_operator": "Nurse: Aishah (HKL-NRS-234)"
+            },
+            "where": {
+                "location_name": "HKL Registration Counter",
+                "address": "Jalan Pahang, 50586 Kuala Lumpur",
+                "city": "Kuala Lumpur",
+                "state": "Wilayah Persekutuan",
+                "country": "Malaysia",
+                "coordinates": {
+                    "latitude": 3.1714,
+                    "longitude": 101.7006
+                },
+                "ip_address": "103.28.xxx.xxx",
+                "device_type": "Workstation"
+            },
+            "why": {
+                "purpose": "Outpatient registration - medical records access",
+                "purpose_category": "healthcare",
+                "reference_number": "OPD-HKL-20251205-5678",
+                "transaction_type": "medical_registration"
+            },
+            "what": {
+                "qr_type": "digital_id",
+                "data_requested": [
+                    "personal.full_name",
+                    "personal.ic_number",
+                    "medical",
+                    "emergency_contacts",
+                    "insurance_medical"
+                ],
+                "data_provided": [
+                    "personal.full_name",
+                    "personal.ic_number",
+                    "medical",
+                    "emergency_contacts",
+                    "insurance_medical"
+                ],
+                "permission_level": "full_view",
+                "fields_accessed": 12,
+                "verification_result": true,
+                "verification_details": "Patient identity verified, medical records accessed"
+            },
+            "how": {
+                "scan_method": "camera_scan",
+                "app_version": "2.1.0",
+                "qr_version": "v2",
+                "encryption_used": true,
+                "decryption_successful": true,
+                "response_time_ms": 890
+            },
+            "consent": {
+                "consent_given": true,
+                "consent_method": "biometric_approval",
+                "consent_timestamp": "2025-12-05T13:58:00",
+                "consent_id": "CNS-2025-002",
+                "consent_expiry": null
+            },
+            "result": {
+                "status": "success",
+                "action_taken": "Patient registered, assigned to waiting queue",
+                "error_code": null,
+                "error_message": null
+            },
+            "user_notification": {
+                "notified": true,
+                "notification_method": "push",
+                "notification_sent_at": "2025-12-05T14:00:03"
+            }
+        }
+    ],
+    "scan_summary_by_organization": [
+        {
+            "organization_id": "ORG002",
+            "organization_name": "Maybank Berhad",
+            "total_scans": 15,
+            "last_scan": "2025-12-10"
+        },
+        {
+            "organization_id": "ORG005",
+            "organization_name": "GSC Cinemas",
+            "total_scans": 8,
+            "last_scan": "2025-12-10"
+        },
+        {
+            "organization_id": "ORG003",
+            "organization_name": "Hospital Kuala Lumpur",
+            "total_scans": 6,
+            "last_scan": "2025-12-05"
+        },
+        {
+            "organization_id": "ORG006",
+            "organization_name": "Hilton Kuala Lumpur",
+            "total_scans": 4,
+            "last_scan": "2025-12-09"
+        },
+        {
+            "organization_id": "ORG007",
+            "organization_name": "Grab Malaysia",
+            "total_scans": 12,
+            "last_scan": "2025-12-07"
+        },
+        {
+            "organization_id": "ORG_UNKNOWN",
+            "organization_name": "Unknown/Blocked",
+            "total_scans": 2,
+            "last_scan": "2025-12-08"
+        }
+    ],
+    "scan_summary_by_type": {
+        "age_verification": 10,
+        "identity_verification": 18,
+        "financial_service": 8,
+        "healthcare": 6,
+        "hotel_checkin": 4,
+        "blocked": 1
+    }
+}

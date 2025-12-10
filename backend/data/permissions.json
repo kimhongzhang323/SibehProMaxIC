@@ -1,0 +1,386 @@
+{
+    "_metadata": {
+        "description": "Permission matrix for QR code data access",
+        "version": "1.0",
+        "updated_at": "2025-12-10",
+        "encryption_note": "Fields marked 'encrypted' require organization's private key + user's public key to decrypt"
+    },
+    "permission_levels": {
+        "verify_only": {
+            "description": "Can only verify true/false, no actual data returned",
+            "example": "Is user above 18? → true/false"
+        },
+        "partial_view": {
+            "description": "Can see masked data (e.g., ****5678)",
+            "example": "IC: ******-**-5678"
+        },
+        "full_view": {
+            "description": "Can see full data, encrypted with org key",
+            "requires_decryption": true
+        }
+    },
+    "organization_types": {
+        "government_agency": {
+            "name": "Government Agency",
+            "trust_level": "highest",
+            "description": "JPN, Immigration, LHDN, JPJ, PDRM",
+            "default_permissions": {
+                "personal": "full_view",
+                "passport": "full_view",
+                "employment": "full_view",
+                "documents": "full_view",
+                "security": "full_view"
+            },
+            "requires_user_consent": false,
+            "audit_required": true
+        },
+        "bank_financial": {
+            "name": "Bank / Financial Institution",
+            "trust_level": "high",
+            "description": "Maybank, CIMB, Public Bank, licensed money lenders",
+            "default_permissions": {
+                "personal": "full_view",
+                "employment": "full_view",
+                "income_sources": "full_view",
+                "bank": "partial_view",
+                "property": "full_view",
+                "documents": "partial_view"
+            },
+            "requires_user_consent": true,
+            "consent_duration_days": 30,
+            "audit_required": true
+        },
+        "healthcare": {
+            "name": "Healthcare Provider",
+            "trust_level": "high",
+            "description": "Hospitals, clinics, pharmacies",
+            "default_permissions": {
+                "personal.full_name": "full_view",
+                "personal.ic_number": "full_view",
+                "personal.date_of_birth": "full_view",
+                "personal.phone": "full_view",
+                "emergency_contacts": "full_view",
+                "medical": "full_view",
+                "insurance_medical": "full_view"
+            },
+            "requires_user_consent": true,
+            "audit_required": true
+        },
+        "employer": {
+            "name": "Employer / HR",
+            "trust_level": "medium",
+            "description": "Current or prospective employers",
+            "default_permissions": {
+                "personal.full_name": "full_view",
+                "personal.ic_number": "partial_view",
+                "personal.phone": "full_view",
+                "personal.email": "full_view",
+                "education": "full_view",
+                "professional_cert": "full_view",
+                "employment.previous": "full_view"
+            },
+            "requires_user_consent": true,
+            "consent_duration_days": 7,
+            "audit_required": true
+        },
+        "telecom": {
+            "name": "Telecommunications Provider",
+            "trust_level": "medium",
+            "description": "Maxis, Digi, Celcom, U Mobile",
+            "default_permissions": {
+                "personal.full_name": "full_view",
+                "personal.ic_number": "full_view",
+                "personal.phone": "partial_view",
+                "personal.address": "full_view"
+            },
+            "requires_user_consent": true,
+            "audit_required": true
+        },
+        "insurance": {
+            "name": "Insurance Provider",
+            "trust_level": "medium",
+            "description": "Life, medical, motor insurance companies",
+            "default_permissions": {
+                "personal": "full_view",
+                "medical": "full_view",
+                "vehicle": "full_view",
+                "driving_license": "full_view",
+                "income_sources": "partial_view"
+            },
+            "requires_user_consent": true,
+            "consent_duration_days": 30,
+            "audit_required": true
+        },
+        "education": {
+            "name": "Educational Institution",
+            "trust_level": "medium",
+            "description": "Universities, colleges, training providers",
+            "default_permissions": {
+                "personal.full_name": "full_view",
+                "personal.ic_number": "full_view",
+                "personal.date_of_birth": "full_view",
+                "education": "full_view",
+                "professional_cert": "full_view"
+            },
+            "requires_user_consent": true,
+            "audit_required": true
+        },
+        "retail_merchant": {
+            "name": "Retail Merchant",
+            "trust_level": "low",
+            "description": "Shops, restaurants, e-commerce",
+            "default_permissions": {
+                "age_verification": "verify_only",
+                "identity_verification": "verify_only"
+            },
+            "requires_user_consent": true,
+            "audit_required": false
+        },
+        "hotel_accommodation": {
+            "name": "Hotel / Accommodation",
+            "trust_level": "low",
+            "description": "Hotels, Airbnb, hostels",
+            "default_permissions": {
+                "personal.full_name": "full_view",
+                "personal.ic_number": "partial_view",
+                "passport.number": "partial_view",
+                "personal.nationality": "full_view"
+            },
+            "requires_user_consent": true,
+            "audit_required": true
+        },
+        "transport": {
+            "name": "Transport Service",
+            "trust_level": "low",
+            "description": "Airlines, car rental, Grab",
+            "default_permissions": {
+                "personal.full_name": "full_view",
+                "driving_license.number": "verify_only",
+                "driving_license.class": "full_view",
+                "driving_license.expiry": "verify_only"
+            },
+            "requires_user_consent": true,
+            "audit_required": false
+        },
+        "age_restricted_venue": {
+            "name": "Age-Restricted Venue",
+            "trust_level": "lowest",
+            "description": "Bars, clubs, casinos, lottery",
+            "default_permissions": {
+                "age_verification": "verify_only",
+                "religion_verification": "verify_only"
+            },
+            "requires_user_consent": true,
+            "audit_required": false
+        }
+    },
+    "registered_organizations": {
+        "ORG001": {
+            "name": "Jabatan Pendaftaran Negara (JPN)",
+            "type": "government_agency",
+            "registration_number": "GOV-JPN-001",
+            "public_key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA...",
+            "status": "active",
+            "registered_at": "2020-01-01"
+        },
+        "ORG002": {
+            "name": "Maybank Berhad",
+            "type": "bank_financial",
+            "registration_number": "BNM-MB-1234",
+            "public_key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEB...",
+            "status": "active",
+            "registered_at": "2020-03-15"
+        },
+        "ORG003": {
+            "name": "Hospital Kuala Lumpur",
+            "type": "healthcare",
+            "registration_number": "MOH-HKL-001",
+            "public_key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEC...",
+            "status": "active",
+            "registered_at": "2020-06-01"
+        },
+        "ORG004": {
+            "name": "TechCorp Malaysia Sdn Bhd",
+            "type": "employer",
+            "registration_number": "SSM-1234567-A",
+            "public_key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQED...",
+            "status": "active",
+            "registered_at": "2022-01-15"
+        },
+        "ORG005": {
+            "name": "GSC Cinemas",
+            "type": "retail_merchant",
+            "registration_number": "SSM-7654321-K",
+            "public_key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEE...",
+            "status": "active",
+            "registered_at": "2023-05-20"
+        },
+        "ORG006": {
+            "name": "Hilton Kuala Lumpur",
+            "type": "hotel_accommodation",
+            "registration_number": "MOTAC-HTL-12345",
+            "public_key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEF...",
+            "status": "active",
+            "registered_at": "2021-08-10"
+        },
+        "ORG007": {
+            "name": "Grab Malaysia",
+            "type": "transport",
+            "registration_number": "SSM-GRAB-MY-001",
+            "public_key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEG...",
+            "status": "active",
+            "registered_at": "2022-11-30"
+        }
+    },
+    "verification_types": {
+        "age_verification": {
+            "description": "Check if user meets age requirement",
+            "data_used": [
+                "date_of_birth"
+            ],
+            "returns": "boolean",
+            "example_query": "is_above_18",
+            "example_response": true
+        },
+        "identity_verification": {
+            "description": "Verify name matches IC",
+            "data_used": [
+                "full_name",
+                "ic_number"
+            ],
+            "returns": "boolean",
+            "example_query": "verify_identity",
+            "example_response": true
+        },
+        "religion_verification": {
+            "description": "Check religion for Shariah-compliance",
+            "data_used": [
+                "religion"
+            ],
+            "returns": "boolean",
+            "example_query": "is_muslim",
+            "example_response": true
+        },
+        "employment_verification": {
+            "description": "Verify current employment",
+            "data_used": [
+                "employer_name",
+                "employment_status"
+            ],
+            "returns": "boolean",
+            "example_query": "is_employed",
+            "example_response": true
+        },
+        "license_verification": {
+            "description": "Check valid driving license",
+            "data_used": [
+                "driving_license_number",
+                "driving_license_expiry"
+            ],
+            "returns": "boolean",
+            "example_query": "has_valid_license_class_D",
+            "example_response": true
+        }
+    },
+    "data_field_sensitivity": {
+        "public": [
+            "full_name",
+            "nationality"
+        ],
+        "low": [
+            "gender",
+            "age_bracket",
+            "state"
+        ],
+        "medium": [
+            "phone",
+            "email",
+            "address",
+            "employer_name",
+            "job_title"
+        ],
+        "high": [
+            "ic_number",
+            "date_of_birth",
+            "passport_number",
+            "bank_account_number",
+            "monthly_income"
+        ],
+        "critical": [
+            "biometric_data",
+            "medical_conditions",
+            "blood_type",
+            "allergies",
+            "tax_number",
+            "epf_number"
+        ]
+    },
+    "consent_log_sample": [
+        {
+            "consent_id": "CNS-2025-001",
+            "user_id": "default",
+            "organization_id": "ORG002",
+            "organization_name": "Maybank Berhad",
+            "fields_consented": [
+                "personal",
+                "employment",
+                "income_sources"
+            ],
+            "purpose": "Loan Application",
+            "granted_at": "2025-12-01T10:30:00",
+            "expires_at": "2025-12-31T10:30:00",
+            "status": "active",
+            "revoked_at": null
+        },
+        {
+            "consent_id": "CNS-2025-002",
+            "user_id": "default",
+            "organization_id": "ORG003",
+            "organization_name": "Hospital Kuala Lumpur",
+            "fields_consented": [
+                "personal.full_name",
+                "personal.ic_number",
+                "medical",
+                "emergency_contacts"
+            ],
+            "purpose": "Medical Treatment",
+            "granted_at": "2025-12-05T14:00:00",
+            "expires_at": null,
+            "status": "active",
+            "revoked_at": null
+        }
+    ],
+    "access_log_sample": [
+        {
+            "log_id": "LOG-2025-0001",
+            "timestamp": "2025-12-10T10:15:00",
+            "organization_id": "ORG005",
+            "organization_name": "GSC Cinemas",
+            "user_id": "default",
+            "access_type": "verify_only",
+            "fields_accessed": [
+                "age_verification"
+            ],
+            "result": "verified",
+            "purpose": "18+ movie ticket purchase",
+            "ip_address": "203.106.xxx.xxx"
+        },
+        {
+            "log_id": "LOG-2025-0002",
+            "timestamp": "2025-12-10T09:30:00",
+            "organization_id": "ORG002",
+            "organization_name": "Maybank Berhad",
+            "user_id": "default",
+            "access_type": "full_view",
+            "fields_accessed": [
+                "personal",
+                "employment",
+                "income_sources"
+            ],
+            "result": "decrypted_and_viewed",
+            "purpose": "Loan processing",
+            "ip_address": "175.136.xxx.xxx",
+            "consent_id": "CNS-2025-001"
+        }
+    ]
+}

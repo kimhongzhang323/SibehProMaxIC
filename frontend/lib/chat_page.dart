@@ -7,6 +7,9 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'api_service.dart';
 import 'widgets/glassy_button.dart';
+import 'widgets/task_sidebar.dart';
+import 'chat_history_sheet.dart';
+import 'models/agentic_models.dart';
 
 class ChatPage extends StatefulWidget {
   const ChatPage({super.key});
@@ -63,6 +66,12 @@ class _ChatPageState extends State<ChatPage> {
   int _mapCounter = 0;
   String? _googleMapsApiKey;
   
+  // State for tasks and history
+  List<AgenticTask> _activeTasks = [];
+  List<ChatSession> _chatHistory = [];
+  String _currentSessionId = '';
+  bool _isHistoryLoading = false;
+  
   String _selectedLanguage = 'english';
   final Map<String, String> _languages = {
     'english': '🇬🇧 English',
@@ -78,6 +87,8 @@ class _ChatPageState extends State<ChatPage> {
     super.initState();
     _addWelcomeMessage();
     _fetchApiKey();
+    _currentSessionId = DateTime.now().millisecondsSinceEpoch.toString();
+    _fetchActiveTasks();
   }
 
   Future<void> _fetchApiKey() async {
@@ -231,6 +242,28 @@ class _ChatPageState extends State<ChatPage> {
     _controller.clear();
     _scrollToBottom();
 
+    // Check for agentic task triggers
+    final lowerText = text.toLowerCase();
+    String? agenticTaskType;
+    
+    if (lowerText.contains('visa') || lowerText.contains('apply for visa')) {
+      agenticTaskType = 'visa_application';
+    } else if (lowerText.contains('foreign worker') || lowerText.contains('worker permit')) {
+      agenticTaskType = 'foreign_worker_permit';
+    } else if (lowerText.contains('renew') && lowerText.contains('passport')) {
+      agenticTaskType = 'passport_renewal';
+    } else if ((lowerText.contains('lost') || lowerText.contains('replace')) && lowerText.contains('ic')) {
+      agenticTaskType = 'ic_replacement';
+    } else if (lowerText.contains('tax') && (lowerText.contains('file') || lowerText.contains('filing') || lowerText.contains('pay'))) {
+      agenticTaskType = 'tax_filing';
+    }
+
+    if (agenticTaskType != null) {
+      setState(() => _isLoading = false);
+      await _startAgenticTask(agenticTaskType);
+      return;
+    }
+
     try {
       final responseData = await _apiService.chat(text, language: _selectedLanguage);
       final responseText = responseData['response'] ?? 'No response';
@@ -264,6 +297,9 @@ class _ChatPageState extends State<ChatPage> {
       });
       _scrollToBottom();
       if (_isVoiceMode) _speakText(responseText);
+      
+      // Auto-save to history after each exchange
+      _saveChatHistory();
     } catch (e) {
       setState(() { _messages.add(ChatMessage(content: "Unable to connect: $e", isUser: false)); _isLoading = false; });
       _scrollToBottom();
@@ -301,38 +337,50 @@ class _ChatPageState extends State<ChatPage> {
     final hasUserMessages = _messages.any((m) => m.isUser);
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF0E4CFF),
-              Color(0xFF4C3DEB),
-              Color(0xFF0EA6C1),
-              Color(0xFF9B59B6),
-            ],
-            stops: [0.05, 0.35, 0.65, 0.95],
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              _buildHeroHeader(),
-              if (_showSuggestions && !hasUserMessages) _buildSuggestionChips(),
-              Expanded(
-                child: ListView.builder(
-                  controller: _scrollController,
-                  padding: const EdgeInsets.all(16),
-                  itemCount: _messages.length,
-                  itemBuilder: (context, index) => _buildMessage(_messages[index]),
-                ),
+      body: Stack(
+        children: [
+          // Main chat area
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFF0E4CFF),
+                  Color(0xFF4C3DEB),
+                  Color(0xFF0EA6C1),
+                  Color(0xFF9B59B6),
+                ],
+                stops: [0.05, 0.35, 0.65, 0.95],
               ),
-              if (_isLoading) _buildTyping(),
-              _buildInput(),
-            ],
+            ),
+            child: SafeArea(
+              child: Column(
+                children: [
+                  _buildHeroHeader(),
+                  if (_showSuggestions && !hasUserMessages) _buildSuggestionChips(),
+                  Expanded(
+                    child: ListView.builder(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.all(16),
+                      itemCount: _messages.length,
+                      itemBuilder: (context, index) => _buildMessage(_messages[index]),
+                    ),
+                  ),
+                  if (_isLoading) _buildTyping(),
+                  _buildInput(),
+                ],
+              ),
+            ),
           ),
-        ),
+          // Floating task button
+          TaskButton(
+            tasks: _activeTasks,
+            onCancelTask: _cancelTask,
+            onAdvanceTask: _advanceTask,
+            onSelectTask: _selectTask,
+          ),
+        ],
       ),
     );
   }
@@ -659,7 +707,24 @@ class _ChatPageState extends State<ChatPage> {
                   ),
                 ],
               ),
-              const SizedBox(width: 10),
+              // History button
+              GestureDetector(
+                onTap: _showChatHistory,
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.white.withOpacity(0.2)),
+                  ),
+                  child: Icon(
+                    Icons.history,
+                    color: Colors.white.withOpacity(0.9),
+                    size: 22,
+                  ),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 24),
@@ -692,9 +757,9 @@ class _ChatPageState extends State<ChatPage> {
       '🪪 I lost my IC',
       '💳 How do I pay tax?',
       '📄 Renew my passport',
+      '🛂 Apply for visa',
+      '👷 Foreign worker permit',
       '📍 Find nearest JPN',
-      '🏦 Update address',
-      '👶 Register newborn',
     ];
 
     return Padding(
@@ -721,5 +786,379 @@ class _ChatPageState extends State<ChatPage> {
         ),
       ),
     );
+  }
+
+  // ============== TASK MANAGEMENT METHODS ==============
+
+  Future<void> _fetchActiveTasks() async {
+    try {
+      final response = await http.get(Uri.parse('$_backendUrl/tasks'));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final tasksList = (data['tasks'] as List)
+            .map((t) => AgenticTask.fromJson(t))
+            .where((t) => t.isActive)
+            .toList();
+        setState(() => _activeTasks = tasksList);
+      }
+    } catch (e) {
+      // Silent fail - tasks are optional
+    }
+  }
+
+  Future<void> _startAgenticTask(String taskType) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$_backendUrl/task/start-with-verification'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'task_type': taskType}),
+      );
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        
+        // Check if validation failed
+        if (data['success'] == false) {
+          // Show what's missing
+          String content = "⚠️ Cannot start this task yet\n\n";
+          
+          final validation = data['validation'];
+          final missingFields = data['missing_info']['fields'] as List? ?? [];
+          final missingDocs = data['missing_info']['documents'] as List? ?? [];
+          final securityIssues = validation?['security_issues'] as List? ?? [];
+          
+          // Show security level issues first
+          if (securityIssues.isNotEmpty) {
+            content += "🔒 Security Level Required:\n";
+            for (var issue in securityIssues) {
+              if (issue['issue'] == 'insufficient_security_level') {
+                content += "  Current: ${issue['current_level']} → Required: ${issue['required_level']}\n";
+              } else if (issue['issue'] == 'missing_security_requirement') {
+                content += "  ⚡ Need: ${issue['label']}\n";
+              }
+            }
+            content += "\n";
+          }
+          
+          // Show missing fields
+          if (missingFields.isNotEmpty) {
+            content += "📋 Missing Information:\n";
+            for (var field in missingFields) {
+              content += "  ❌ ${field['label']}\n";
+            }
+            content += "\n";
+          }
+          
+          // Show missing documents
+          if (missingDocs.isNotEmpty) {
+            content += "📄 Missing Documents:\n";
+            for (var doc in missingDocs) {
+              content += "  📎 ${doc['label']}\n";
+            }
+            content += "\n";
+          }
+          
+          // Show auto-verification results if available
+          final autoVerification = data['auto_verification'];
+          if (autoVerification != null) {
+            final results = autoVerification['results'] as List? ?? [];
+            if (results.isNotEmpty) {
+              content += "🤖 Agent Verification Results:\n";
+              for (var result in results) {
+                content += "  ${result['message']}\n";
+              }
+              content += "\n";
+              final summary = autoVerification['summary'];
+              if (summary != null) {
+                content += "📊 Checks: ${summary['passed']}/${summary['total_checks']} passed";
+                if (summary['warnings'] > 0) {
+                  content += " (${summary['warnings']} warnings)";
+                }
+                content += "\n";
+              }
+            }
+          } else if (validation != null) {
+            content += "📊 Profile completion: ${validation['completion_percentage']}%";
+          }
+          
+          content += "\nPlease update your profile in the ID page to continue.";
+          
+          setState(() {
+            _messages.add(ChatMessage(content: content, isUser: false));
+          });
+          _scrollToBottom();
+          return;
+        }
+        
+        // Task created successfully - show verification summary
+        final task = AgenticTask.fromJson(data['task']);
+        final autoVerification = data['auto_verification'];
+        
+        String successContent = "${task.icon} Started: ${task.name}\n\n";
+        
+        // Show what was auto-verified
+        if (autoVerification != null) {
+          successContent += "🤖 Agent Auto-Verified:\n";
+          final results = autoVerification['results'] as List? ?? [];
+          for (var result in results) {
+            successContent += "${result['message']}\n";
+          }
+          final summary = autoVerification['summary'];
+          if (summary != null) {
+            successContent += "\n✅ All ${summary['total_checks']} checks passed!\n";
+          }
+        }
+        
+        // Show skipped step info
+        if (data['skipped_step'] != null) {
+          successContent += "\n⏭️ ${data['skipped_step']}\n";
+        }
+        
+        // Show current step
+        final currentStep = data['current_step'];
+        if (currentStep != null) {
+          successContent += "\n📍 Now at: ${currentStep['title']}\n${currentStep['description'] ?? ''}\n";
+        }
+        
+        successContent += "\nClick the task button to track progress 📋";
+        
+        setState(() {
+          _activeTasks.add(task);
+          _messages.add(ChatMessage(
+            content: successContent,
+            isUser: false,
+          ));
+        });
+        _scrollToBottom();
+      }
+    } catch (e) {
+      _showSnackBar('Failed to start task: $e');
+    }
+  }
+
+  Future<void> _cancelTask(String taskId) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$_backendUrl/task/$taskId/cancel'),
+      );
+      
+      if (response.statusCode == 200) {
+        setState(() {
+          _activeTasks.removeWhere((t) => t.id == taskId);
+        });
+        _showSnackBar('Task cancelled');
+      }
+    } catch (e) {
+      _showSnackBar('Failed to cancel task: $e');
+    }
+  }
+
+  Future<void> _advanceTask(String taskId) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$_backendUrl/task/$taskId/advance'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'task_id': taskId}),
+      );
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        
+        if (data['completed'] == true) {
+          setState(() {
+            _activeTasks.removeWhere((t) => t.id == taskId);
+            _messages.add(ChatMessage(
+              content: "🎉 ${data['message']}",
+              isUser: false,
+            ));
+          });
+          _scrollToBottom();
+        } else {
+          final task = AgenticTask.fromJson(data['task']);
+          setState(() {
+            final index = _activeTasks.indexWhere((t) => t.id == taskId);
+            if (index >= 0) {
+              _activeTasks[index] = task;
+            }
+          });
+          
+          // Add progress message
+          final nextStep = data['next_step'];
+          if (nextStep != null) {
+            setState(() {
+              _messages.add(ChatMessage(
+                content: "✅ ${data['message']}\n\n${nextStep['description'] ?? ''}",
+                isUser: false,
+              ));
+            });
+            _scrollToBottom();
+          }
+        }
+      }
+    } catch (e) {
+      _showSnackBar('Failed to advance task: $e');
+    }
+  }
+
+  void _selectTask(String taskId) {
+    final task = _activeTasks.firstWhere((t) => t.id == taskId, orElse: () => _activeTasks.first);
+    final step = task.currentStepDetails;
+    
+    if (step != null) {
+      String content = "${task.icon} ${task.name}\n\n";
+      content += "📍 Step ${task.currentStep}: ${step.title}\n";
+      content += "${step.description}\n";
+      
+      // Show autofill info
+      if (step.hasAutofill) {
+        content += "\n✨ Your info will be auto-filled from your digital ID";
+      }
+      
+      // Show checklist
+      if (step.hasChecklist) {
+        content += "\n\n📋 Required:\n";
+        for (var item in step.checklist!) {
+          content += "  • $item\n";
+        }
+      }
+      
+      // Show required docs
+      if (step.requiredDocs != null) {
+        content += "\n📎 Documents needed:\n";
+        for (var doc in step.requiredDocs!) {
+          content += "  • $doc\n";
+        }
+      }
+
+      setState(() {
+        _messages.add(ChatMessage(
+          content: content,
+          isUser: false,
+          url: step.url,
+          label: step.actionLabel ?? 'Open Portal',
+        ));
+      });
+      _scrollToBottom();
+    }
+  }
+
+  // ============== HISTORY MANAGEMENT METHODS ==============
+
+  Future<void> _fetchChatHistory() async {
+    setState(() => _isHistoryLoading = true);
+    
+    try {
+      final response = await http.get(Uri.parse('$_backendUrl/history'));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final sessions = (data['sessions'] as List)
+            .map((s) => ChatSession.fromJson(s))
+            .toList();
+        setState(() {
+          _chatHistory = sessions;
+          _isHistoryLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() => _isHistoryLoading = false);
+    }
+  }
+
+  Future<void> _saveChatHistory() async {
+    if (_messages.isEmpty) return;
+    
+    try {
+      final messagesData = _messages.map((m) => {
+        'content': m.content,
+        'isUser': m.isUser,
+        'type': m.type,
+        'timestamp': m.timestamp.toIso8601String(),
+      }).toList();
+      
+      await http.post(
+        Uri.parse('$_backendUrl/history/save'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'session_id': _currentSessionId,
+          'messages': messagesData,
+        }),
+      );
+    } catch (e) {
+      // Silent fail
+    }
+  }
+
+  void _showChatHistory() async {
+    await _fetchChatHistory();
+    
+    if (!mounted) return;
+    
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => ChatHistorySheet(
+        sessions: _chatHistory,
+        isLoading: _isHistoryLoading,
+        onSelectSession: _loadChatSession,
+        onDeleteSession: _deleteHistorySession,
+        onClearAll: _clearAllHistory,
+      ),
+    );
+  }
+
+  Future<void> _loadChatSession(ChatSession session) async {
+    try {
+      final response = await http.get(
+        Uri.parse('$_backendUrl/history/${session.id}'),
+      );
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final messages = (data['messages'] as List).map((m) => ChatMessage(
+          content: m['content'] ?? '',
+          isUser: m['isUser'] ?? false,
+          type: m['type'] ?? 'text',
+        )).toList();
+        
+        setState(() {
+          _messages.clear();
+          _messages.addAll(messages);
+          _currentSessionId = session.id;
+          _showSuggestions = false;
+        });
+        _scrollToBottom();
+      }
+    } catch (e) {
+      _showSnackBar('Failed to load session');
+    }
+  }
+
+  Future<void> _deleteHistorySession(String sessionId) async {
+    try {
+      await http.delete(Uri.parse('$_backendUrl/history/$sessionId'));
+      setState(() {
+        _chatHistory.removeWhere((s) => s.id == sessionId);
+      });
+    } catch (e) {
+      _showSnackBar('Failed to delete session');
+    }
+  }
+
+  Future<void> _clearAllHistory() async {
+    try {
+      await http.delete(Uri.parse('$_backendUrl/history'));
+      setState(() => _chatHistory.clear());
+      _showSnackBar('History cleared');
+    } catch (e) {
+      _showSnackBar('Failed to clear history');
+    }
+  }
+
+  // Auto-save when sending messages
+  @override
+  void dispose() {
+    _saveChatHistory();
+    super.dispose();
   }
 }

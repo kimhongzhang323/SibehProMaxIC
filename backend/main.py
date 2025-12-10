@@ -1,15 +1,137 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from dotenv import load_dotenv
+from datetime import datetime
+from tinydb import TinyDB, Query
 import httpx
 import os
 import json
 import re
+import uuid
 
 load_dotenv()
+
+# Initialize TinyDB - JSON file-based database
+db = TinyDB('data/database.json', indent=2)
+users_table = db.table('users')
+tasks_table = db.table('tasks')
+history_table = db.table('history')
+documents_table = db.table('documents')
+
+# Ensure data directory exists
+os.makedirs('data', exist_ok=True)
+
+# User profile schema - fields required for various services
+USER_PROFILE_SCHEMA = {
+    "personal": {
+        "full_name": {"label": "Full Name", "required": True},
+        "ic_number": {"label": "IC Number (MyKad)", "required": True},
+        "date_of_birth": {"label": "Date of Birth", "required": True},
+        "gender": {"label": "Gender", "required": True},
+        "nationality": {"label": "Nationality", "required": True},
+        "phone": {"label": "Phone Number", "required": True},
+        "email": {"label": "Email Address", "required": True},
+        "address": {"label": "Home Address", "required": False},
+    },
+    "passport": {
+        "passport_number": {"label": "Passport Number", "required": False},
+        "passport_expiry": {"label": "Passport Expiry Date", "required": False},
+        "passport_issue_date": {"label": "Passport Issue Date", "required": False},
+    },
+    "employment": {
+        "employer_name": {"label": "Employer Name", "required": False},
+        "company_name": {"label": "Company Name", "required": False},
+        "ssm_number": {"label": "SSM Registration Number", "required": False},
+        "job_title": {"label": "Job Title", "required": False},
+        "monthly_income": {"label": "Monthly Income", "required": False},
+    },
+    "business": {
+        "business_type": {"label": "Business Type", "required": False},  # sole_proprietor, sdn_bhd, bhd, llp
+        "business_sector": {"label": "Business Sector", "required": False},
+        "business_registration_date": {"label": "Business Registration Date", "required": False},
+        "authorized_capital": {"label": "Authorized Capital (RM)", "required": False},
+        "paid_up_capital": {"label": "Paid-Up Capital (RM)", "required": False},
+        "num_employees": {"label": "Number of Employees", "required": False},
+        "contractor_license": {"label": "Contractor License (CIDB)", "required": False},
+        "contractor_grade": {"label": "Contractor Grade", "required": False},
+    },
+    "security": {
+        "security_level": {"label": "Security Verification Level", "required": False},  # basic, verified, premium
+        "biometric_registered": {"label": "Biometric Registered", "required": False},
+        "two_factor_enabled": {"label": "Two-Factor Authentication", "required": False},
+        "account_status": {"label": "Account Status", "required": False},  # active, suspended, pending
+        "last_login": {"label": "Last Login", "required": False},
+    },
+    "documents": {
+        "birth_cert_uploaded": {"label": "Birth Certificate", "required": False},
+        "ic_uploaded": {"label": "IC Copy", "required": False},
+        "passport_uploaded": {"label": "Passport Copy", "required": False},
+        "photo_uploaded": {"label": "Passport Photo", "required": False},
+        "ssm_cert_uploaded": {"label": "SSM Certificate", "required": False},
+        "business_license_uploaded": {"label": "Business License", "required": False},
+    }
+}
+
+# Security level requirements - what each level allows
+SECURITY_LEVELS = {
+    "basic": {
+        "description": "Basic account - email verified only",
+        "allowed_services": ["tax_filing"],
+        "transaction_limit": 1000,
+        "requirements": ["email"]
+    },
+    "verified": {
+        "description": "Verified account - IC and biometric verified",
+        "allowed_services": ["tax_filing", "passport_renewal", "ic_replacement", "visa_application"],
+        "transaction_limit": 50000,
+        "requirements": ["email", "ic_number", "biometric_registered"]
+    },
+    "premium": {
+        "description": "Premium account - Full verification with 2FA",
+        "allowed_services": ["tax_filing", "passport_renewal", "ic_replacement", "visa_application", "foreign_worker_permit"],
+        "transaction_limit": 500000,
+        "requirements": ["email", "ic_number", "biometric_registered", "two_factor_enabled"]
+    }
+}
+
+# Validation requirements for each service type
+SERVICE_VALIDATION_REQUIREMENTS = {
+    "visa_application": {
+        "required_fields": ["full_name", "ic_number", "nationality", "passport_number", "passport_expiry", "phone", "email"],
+        "required_documents": ["passport_uploaded", "photo_uploaded"],
+        "required_security_level": "verified",
+        "description": "Visa Application"
+    },
+    "passport_renewal": {
+        "required_fields": ["full_name", "ic_number", "date_of_birth", "phone", "email", "passport_number"],
+        "required_documents": ["ic_uploaded", "photo_uploaded"],
+        "required_security_level": "verified",
+        "description": "Passport Renewal"
+    },
+    "ic_replacement": {
+        "required_fields": ["full_name", "ic_number", "date_of_birth", "phone", "email", "address"],
+        "required_documents": ["birth_cert_uploaded", "photo_uploaded"],
+        "required_security_level": "verified",
+        "description": "IC Replacement"
+    },
+    "foreign_worker_permit": {
+        "required_fields": ["full_name", "ic_number", "phone", "email", "employer_name", "company_name", "ssm_number"],
+        "required_documents": ["ic_uploaded", "ssm_cert_uploaded"],
+        "required_security_level": "premium",
+        "required_business_fields": ["business_type", "business_registration_date"],
+        "description": "Foreign Worker Permit"
+    },
+    "tax_filing": {
+        "required_fields": ["full_name", "ic_number", "phone", "email", "monthly_income"],
+        "required_documents": [],
+        "required_security_level": "basic",
+        "description": "Tax Filing"
+    }
+}
+
 
 app = FastAPI()
 
@@ -91,6 +213,336 @@ GOVERNMENT_SERVICES = {
         "search_term": "MyEG"
     }
 }
+
+# Agentic Services - Multi-step guided processes with links and autofill
+AGENTIC_SERVICES = {
+    "visa_application": {
+        "name": "Visa Application",
+        "icon": "🛂",
+        "description": "Apply for a travel visa to Malaysia",
+        "steps": [
+            {
+                "id": 1, 
+                "title": "Check Eligibility", 
+                "description": "Verify visa requirements based on your nationality",
+                "url": "https://www.imi.gov.my/index.php/en/visa/visa-requirement-by-country/",
+                "action": "open_link",
+                "action_label": "Check Requirements"
+            },
+            {
+                "id": 2, 
+                "title": "Gather Documents", 
+                "description": "Prepare: Passport (6+ months validity), 2 passport photos, bank statement, invitation letter",
+                "checklist": ["Passport copy", "Passport photos (35x50mm)", "Bank statement (3 months)", "Flight itinerary", "Hotel booking"]
+            },
+            {
+                "id": 3, 
+                "title": "Fill Application", 
+                "description": "Complete the online eVISA application form",
+                "url": "https://malaysiavisa.imi.gov.my/evisa/evisa.jsp",
+                "action": "open_link",
+                "action_label": "Open eVISA Portal",
+                "autofill_fields": ["full_name", "ic_number", "nationality", "passport_number"]
+            },
+            {
+                "id": 4, 
+                "title": "Upload Documents", 
+                "description": "Upload passport scan, photo, and supporting documents",
+                "requires_upload": True,
+                "action": "upload",
+                "action_label": "Upload Documents"
+            },
+            {
+                "id": 5, 
+                "title": "Pay Fee", 
+                "description": "Pay visa fee: Single Entry RM30-150, Multiple Entry RM80-500",
+                "url": "https://malaysiavisa.imi.gov.my/evisa/payment.jsp",
+                "action": "open_link",
+                "action_label": "Make Payment"
+            },
+            {
+                "id": 6, 
+                "title": "Book Appointment", 
+                "description": "Schedule biometric capture at nearest Immigration office",
+                "url": "https://www.imi.gov.my/index.php/en/appointment/",
+                "action": "open_link",
+                "action_label": "Book Appointment"
+            },
+            {
+                "id": 7, 
+                "title": "Track Status", 
+                "description": "Check your visa application status online",
+                "url": "https://malaysiavisa.imi.gov.my/evisa/status.jsp",
+                "action": "open_link",
+                "action_label": "Track Application"
+            }
+        ],
+        "service": "immigration",
+        "website": "https://www.imi.gov.my/visa"
+    },
+    "passport_renewal": {
+        "name": "Passport Renewal",
+        "icon": "📘",
+        "description": "Renew your Malaysian passport",
+        "steps": [
+            {
+                "id": 1, 
+                "title": "Check Validity", 
+                "description": "Renew if expiry is within 6 months. Your passport info will be pre-filled.",
+                "action": "show_passport",
+                "action_label": "View My Passport"
+            },
+            {
+                "id": 2, 
+                "title": "Book Appointment", 
+                "description": "Book online at MyOnline Passport portal",
+                "url": "https://eservices.imi.gov.my/myimms/myPassport",
+                "action": "open_link",
+                "action_label": "Book at MyOnline Passport",
+                "autofill_fields": ["full_name", "ic_number", "old_passport_number"]
+            },
+            {
+                "id": 3, 
+                "title": "Prepare Documents", 
+                "description": "Bring: IC (original), old passport, recent photos (35x50mm blue background)",
+                "checklist": ["MyKad (original)", "Old passport", "Passport photos x2"]
+            },
+            {
+                "id": 4, 
+                "title": "Pay Fee", 
+                "description": "RM200 for 5-year passport (adults), RM100 for under 12",
+                "url": "https://eservices.imi.gov.my/myimms/payment",
+                "action": "open_link",
+                "action_label": "Pay Online"
+            },
+            {
+                "id": 5, 
+                "title": "Attend Appointment", 
+                "description": "Visit Immigration office for biometric capture. Find nearest office:",
+                "url": "https://www.google.com/maps/search/pejabat+imigresen+malaysia",
+                "action": "open_link",
+                "action_label": "Find Nearest Office"
+            },
+            {
+                "id": 6, 
+                "title": "Collect Passport", 
+                "description": "Collect at UTC (1-2 hours) or Immigration office (3-5 days)",
+                "action": "complete"
+            }
+        ],
+        "service": "immigration",
+        "website": "https://www.imi.gov.my/passport"
+    },
+    "ic_replacement": {
+        "name": "IC Replacement",
+        "icon": "🪪",
+        "description": "Replace lost or damaged MyKad",
+        "steps": [
+            {
+                "id": 1, 
+                "title": "File Police Report", 
+                "description": "Report online at eReporting or at nearest police station",
+                "url": "https://ereporting.rmp.gov.my/",
+                "action": "open_link",
+                "action_label": "File eReport Online",
+                "conditional": "lost"
+            },
+            {
+                "id": 2, 
+                "title": "Book JPN Appointment", 
+                "description": "Schedule appointment at STO JPN portal",
+                "url": "https://sto.jpn.gov.my/",
+                "action": "open_link",
+                "action_label": "Book JPN Appointment",
+                "autofill_fields": ["full_name", "old_ic_number", "phone", "email"]
+            },
+            {
+                "id": 3, 
+                "title": "Prepare Documents", 
+                "description": "Gather required documents based on your situation",
+                "checklist": ["Police report (if lost)", "Birth certificate (copy)", "Passport photos x2", "Utility bill (proof of address)"]
+            },
+            {
+                "id": 4, 
+                "title": "Upload Documents", 
+                "description": "Upload supporting documents to your appointment",
+                "requires_upload": True,
+                "action": "upload",
+                "action_label": "Upload Documents"
+            },
+            {
+                "id": 5, 
+                "title": "Pay Fee", 
+                "description": "Fee: RM10 (first loss), RM100 (second), RM300 (third+). Pay at JPN or online.",
+                "url": "https://sto.jpn.gov.my/payment",
+                "action": "open_link",
+                "action_label": "Pay Fee"
+            },
+            {
+                "id": 6, 
+                "title": "Attend Appointment", 
+                "description": "Visit JPN with documents for verification",
+                "url": "https://www.google.com/maps/search/jabatan+pendaftaran+negara",
+                "action": "open_link",
+                "action_label": "Find Nearest JPN"
+            },
+            {
+                "id": 7, 
+                "title": "Collect IC", 
+                "description": "Collect your new MyKad (1-24 hours processing)",
+                "action": "complete"
+            }
+        ],
+        "service": "jpn",
+        "website": "https://www.jpn.gov.my"
+    },
+    "foreign_worker_permit": {
+        "name": "Foreign Worker Permit",
+        "icon": "👷",
+        "description": "Apply for foreign worker employment permit",
+        "steps": [
+            {
+                "id": 1, 
+                "title": "Register MyIMMS Account", 
+                "description": "Create employer account on MyIMMS portal. Your company info will be auto-filled.",
+                "url": "https://myimms.imi.gov.my/myimms/register",
+                "action": "open_link",
+                "action_label": "Register at MyIMMS",
+                "autofill_fields": ["company_name", "ssm_number", "employer_name", "employer_ic", "phone", "email"],
+                "help_text": "Use your SSM registration number and company details"
+            },
+            {
+                "id": 2, 
+                "title": "Verify Company with SSM", 
+                "description": "Check your company registration status on SSM portal",
+                "url": "https://www.ssm.com.my/Pages/e-Search.aspx",
+                "action": "open_link",
+                "action_label": "Verify SSM Registration",
+                "autofill_fields": ["ssm_number"]
+            },
+            {
+                "id": 3, 
+                "title": "Submit Permit Application", 
+                "description": "Fill out the work permit application form with worker details",
+                "url": "https://myimms.imi.gov.my/myimms/newApplication",
+                "action": "open_link",
+                "action_label": "Start Application",
+                "autofill_fields": ["employer_name", "company_name", "worker_name", "worker_passport", "worker_nationality"],
+                "form_fields": [
+                    {"name": "worker_name", "label": "Worker Full Name", "type": "text"},
+                    {"name": "worker_passport", "label": "Passport Number", "type": "text"},
+                    {"name": "worker_nationality", "label": "Nationality", "type": "select"},
+                    {"name": "job_position", "label": "Job Position", "type": "text"},
+                    {"name": "salary", "label": "Monthly Salary (RM)", "type": "number"}
+                ]
+            },
+            {
+                "id": 4, 
+                "title": "Upload Worker Documents", 
+                "description": "Upload: Worker passport, offer letter, employment contract, medical report",
+                "requires_upload": True,
+                "action": "upload",
+                "action_label": "Upload Documents",
+                "required_docs": ["Worker passport (all pages)", "Offer letter", "Employment contract", "FOMEMA medical report", "Employer SSM certificate"]
+            },
+            {
+                "id": 5, 
+                "title": "Pay Levy & Fees", 
+                "description": "Levy: RM640-1850/year depending on sector. Processing fee: RM125",
+                "url": "https://myimms.imi.gov.my/myimms/payment",
+                "action": "open_link",
+                "action_label": "Make Payment",
+                "fee_breakdown": [
+                    {"item": "Annual Levy (Manufacturing)", "amount": "RM1,850"},
+                    {"item": "Annual Levy (Service)", "amount": "RM1,490"},
+                    {"item": "Annual Levy (Agriculture)", "amount": "RM640"},
+                    {"item": "Processing Fee", "amount": "RM125"},
+                    {"item": "Visa Fee", "amount": "RM30"}
+                ]
+            },
+            {
+                "id": 6, 
+                "title": "Schedule Biometric", 
+                "description": "Book biometric capture appointment for worker",
+                "url": "https://myimms.imi.gov.my/myimms/biometric",
+                "action": "open_link",
+                "action_label": "Book Biometric Appointment"
+            },
+            {
+                "id": 7, 
+                "title": "Track Application", 
+                "description": "Monitor permit application status and approval",
+                "url": "https://myimms.imi.gov.my/myimms/status",
+                "action": "open_link",
+                "action_label": "Track Status"
+            }
+        ],
+        "service": "immigration",
+        "website": "https://myimms.imi.gov.my"
+    },
+    "tax_filing": {
+        "name": "Income Tax Filing",
+        "icon": "💰",
+        "description": "File your annual income tax return",
+        "steps": [
+            {
+                "id": 1, 
+                "title": "Register for e-Filing", 
+                "description": "Create MyTax account using your IC number",
+                "url": "https://mytax.hasil.gov.my/",
+                "action": "open_link",
+                "action_label": "Register at MyTax",
+                "autofill_fields": ["full_name", "ic_number", "phone", "email"]
+            },
+            {
+                "id": 2, 
+                "title": "Gather Documents", 
+                "description": "Collect all required tax documents",
+                "checklist": ["EA Form from employer", "Interest statements", "Insurance receipts", "Medical receipts", "Education receipts", "Donation receipts"]
+            },
+            {
+                "id": 3, 
+                "title": "Calculate Income", 
+                "description": "Use LHDN calculator to estimate your tax",
+                "url": "https://www.hasil.gov.my/bt_go498xMTUzOXMx49.php",
+                "action": "open_link",
+                "action_label": "Open Tax Calculator"
+            },
+            {
+                "id": 4, 
+                "title": "Upload Documents", 
+                "description": "Upload receipts and supporting documents",
+                "requires_upload": True,
+                "action": "upload",
+                "action_label": "Upload Documents"
+            },
+            {
+                "id": 5, 
+                "title": "Submit Return", 
+                "description": "Complete and submit your ITRF (Form BE/B/M)",
+                "url": "https://mytax.hasil.gov.my/",
+                "action": "open_link",
+                "action_label": "Submit Tax Return",
+                "deadline": "April 30 (employed) / June 30 (business)"
+            },
+            {
+                "id": 6, 
+                "title": "Pay Tax", 
+                "description": "Pay any outstanding tax via FPX or credit card",
+                "url": "https://byrhasil.hasil.gov.my/",
+                "action": "open_link",
+                "action_label": "Pay Tax Online"
+            }
+        ],
+        "service": "lhdn",
+        "website": "https://mytax.hasil.gov.my"
+    }
+}
+
+# In-memory storage (replace with database in production)
+active_tasks: Dict[str, Dict[str, Any]] = {}
+chat_history: Dict[str, Dict[str, Any]] = {}
+uploaded_documents: Dict[str, List[Dict[str, Any]]] = {}
 
 # Secure system prompts with knowledge base
 SYSTEM_PROMPTS = {
@@ -520,3 +972,920 @@ async def text_to_speech(request: TTSRequest):
         if response.status_code == 200:
             return Response(content=response.content, media_type="audio/mpeg")
         raise HTTPException(status_code=response.status_code, detail=f"TTS failed")
+
+# ============== AGENTIC SERVICES ENDPOINTS ==============
+
+class TaskCreateRequest(BaseModel):
+    task_type: str
+    user_id: str = "default"
+
+class TaskStepRequest(BaseModel):
+    task_id: str
+    step_data: Optional[dict] = None
+
+class ChatHistoryRequest(BaseModel):
+    session_id: str
+    user_id: str = "default"
+    messages: List[dict]
+
+@app.get("/agentic-services")
+def get_agentic_services():
+    """Get list of available agentic services"""
+    return {
+        "services": [
+            {
+                "id": key,
+                "name": value["name"],
+                "icon": value["icon"],
+                "description": value["description"],
+                "steps_count": len(value["steps"]),
+                "website": value["website"]
+            }
+            for key, value in AGENTIC_SERVICES.items()
+        ]
+    }
+
+@app.get("/agentic-services/{service_id}")
+def get_agentic_service_details(service_id: str):
+    """Get detailed info about an agentic service"""
+    service = AGENTIC_SERVICES.get(service_id)
+    if not service:
+        raise HTTPException(status_code=404, detail=f"Service not found: {service_id}")
+    return {
+        "id": service_id,
+        **service
+    }
+
+@app.post("/task/create")
+def create_task(request: TaskCreateRequest):
+    """Start a new agentic task"""
+    service = AGENTIC_SERVICES.get(request.task_type)
+    if not service:
+        raise HTTPException(status_code=400, detail=f"Unknown task type: {request.task_type}. Available: {list(AGENTIC_SERVICES.keys())}")
+    
+    task_id = str(uuid.uuid4())
+    task = {
+        "id": task_id,
+        "type": request.task_type,
+        "name": service["name"],
+        "icon": service["icon"],
+        "description": service["description"],
+        "steps": service["steps"],
+        "current_step": 1,
+        "total_steps": len(service["steps"]),
+        "status": "in_progress",
+        "user_id": request.user_id,
+        "created_at": datetime.now().isoformat(),
+        "updated_at": datetime.now().isoformat(),
+        "step_data": {},
+        "documents": []
+    }
+    active_tasks[task_id] = task
+    
+    return {
+        "task_id": task_id,
+        "task": task,
+        "message": f"Started {service['name']} - Step 1: {service['steps'][0]['title']}"
+    }
+
+@app.get("/task/{task_id}")
+def get_task_status(task_id: str):
+    """Get current status of a task"""
+    task = active_tasks.get(task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail=f"Task not found: {task_id}")
+    
+    current_step_idx = task["current_step"] - 1
+    current_step = task["steps"][current_step_idx] if current_step_idx < len(task["steps"]) else None
+    
+    return {
+        "task": task,
+        "current_step_details": current_step,
+        "progress_percentage": int((task["current_step"] / task["total_steps"]) * 100)
+    }
+
+@app.get("/tasks")
+def get_all_tasks(user_id: str = "default"):
+    """Get all tasks for a user"""
+    user_tasks = [t for t in active_tasks.values() if t.get("user_id") == user_id]
+    return {
+        "tasks": user_tasks,
+        "active_count": len([t for t in user_tasks if t["status"] == "in_progress"]),
+        "completed_count": len([t for t in user_tasks if t["status"] == "completed"])
+    }
+
+@app.post("/task/{task_id}/advance")
+def advance_task_step(task_id: str, request: TaskStepRequest = None):
+    """Advance to the next step in a task"""
+    task = active_tasks.get(task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail=f"Task not found: {task_id}")
+    
+    if task["status"] != "in_progress":
+        raise HTTPException(status_code=400, detail=f"Task is not in progress: {task['status']}")
+    
+    # Save step data if provided
+    if request and request.step_data:
+        task["step_data"][str(task["current_step"])] = request.step_data
+    
+    # Advance to next step
+    if task["current_step"] < task["total_steps"]:
+        task["current_step"] += 1
+        task["updated_at"] = datetime.now().isoformat()
+        next_step = task["steps"][task["current_step"] - 1]
+        return {
+            "task": task,
+            "message": f"Advanced to Step {task['current_step']}: {next_step['title']}",
+            "next_step": next_step,
+            "requires_upload": next_step.get("requires_upload", False)
+        }
+    else:
+        # Complete the task
+        task["status"] = "completed"
+        task["updated_at"] = datetime.now().isoformat()
+        return {
+            "task": task,
+            "message": f"Task completed: {task['name']}! 🎉",
+            "completed": True
+        }
+
+@app.post("/task/{task_id}/cancel")
+def cancel_task(task_id: str):
+    """Cancel an active task"""
+    task = active_tasks.get(task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail=f"Task not found: {task_id}")
+    
+    task["status"] = "cancelled"
+    task["updated_at"] = datetime.now().isoformat()
+    
+    return {
+        "task_id": task_id,
+        "status": "cancelled",
+        "message": f"Task cancelled: {task['name']}"
+    }
+
+@app.delete("/task/{task_id}")
+def delete_task(task_id: str):
+    """Delete a task completely"""
+    if task_id not in active_tasks:
+        raise HTTPException(status_code=404, detail=f"Task not found: {task_id}")
+    
+    del active_tasks[task_id]
+    # Also clean up any uploaded documents
+    if task_id in uploaded_documents:
+        del uploaded_documents[task_id]
+    
+    return {"message": f"Task deleted: {task_id}"}
+
+# ============== DOCUMENT UPLOAD ENDPOINTS ==============
+
+@app.post("/task/{task_id}/upload")
+async def upload_document(task_id: str, file: UploadFile = File(...)):
+    """Upload a document for a task step"""
+    task = active_tasks.get(task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail=f"Task not found: {task_id}")
+    
+    # Read file content (in production, save to cloud storage)
+    content = await file.read()
+    
+    doc_id = str(uuid.uuid4())
+    doc = {
+        "id": doc_id,
+        "filename": file.filename,
+        "content_type": file.content_type,
+        "size": len(content),
+        "step": task["current_step"],
+        "uploaded_at": datetime.now().isoformat()
+    }
+    
+    if task_id not in uploaded_documents:
+        uploaded_documents[task_id] = []
+    uploaded_documents[task_id].append(doc)
+    task["documents"].append(doc_id)
+    
+    return {
+        "document_id": doc_id,
+        "filename": file.filename,
+        "message": f"Document uploaded successfully: {file.filename}"
+    }
+
+@app.get("/task/{task_id}/documents")
+def get_task_documents(task_id: str):
+    """Get list of documents uploaded for a task"""
+    task = active_tasks.get(task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail=f"Task not found: {task_id}")
+    
+    docs = uploaded_documents.get(task_id, [])
+    return {"task_id": task_id, "documents": docs}
+
+# ============== CHAT HISTORY ENDPOINTS ==============
+
+@app.post("/history/save")
+def save_chat_history(request: ChatHistoryRequest):
+    """Save a chat session to history"""
+    session_id = request.session_id or str(uuid.uuid4())
+    
+    session = {
+        "id": session_id,
+        "user_id": request.user_id,
+        "messages": request.messages,
+        "created_at": datetime.now().isoformat(),
+        "updated_at": datetime.now().isoformat(),
+        "preview": request.messages[-1]["content"][:100] if request.messages else ""
+    }
+    
+    chat_history[session_id] = session
+    return {"session_id": session_id, "message": "Chat history saved"}
+
+@app.get("/history")
+def get_all_history(user_id: str = "default"):
+    """Get all chat history sessions for a user"""
+    user_sessions = [
+        {
+            "id": s["id"],
+            "preview": s.get("preview", ""),
+            "message_count": len(s.get("messages", [])),
+            "created_at": s["created_at"],
+            "updated_at": s["updated_at"]
+        }
+        for s in chat_history.values()
+        if s.get("user_id") == user_id
+    ]
+    # Sort by most recent first
+    user_sessions.sort(key=lambda x: x["updated_at"], reverse=True)
+    return {"sessions": user_sessions}
+
+@app.get("/history/{session_id}")
+def get_chat_session(session_id: str):
+    """Get a specific chat session"""
+    session = chat_history.get(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail=f"Session not found: {session_id}")
+    return session
+
+@app.delete("/history/{session_id}")
+def delete_chat_session(session_id: str):
+    """Delete a specific chat session"""
+    if session_id not in chat_history:
+        raise HTTPException(status_code=404, detail=f"Session not found: {session_id}")
+    del chat_history[session_id]
+    return {"message": f"Session deleted: {session_id}"}
+
+@app.delete("/history")
+def clear_all_history(user_id: str = "default"):
+    """Clear all chat history for a user"""
+    sessions_to_delete = [sid for sid, s in chat_history.items() if s.get("user_id") == user_id]
+    for sid in sessions_to_delete:
+        del chat_history[sid]
+    return {"message": f"Deleted {len(sessions_to_delete)} sessions"}
+
+# ============== USER PROFILE & VALIDATION ENDPOINTS ==============
+
+class UserProfileUpdate(BaseModel):
+    """Model for updating user profile"""
+    full_name: Optional[str] = None
+    ic_number: Optional[str] = None
+    date_of_birth: Optional[str] = None
+    gender: Optional[str] = None
+    nationality: Optional[str] = None
+    phone: Optional[str] = None
+    email: Optional[str] = None
+    address: Optional[str] = None
+    passport_number: Optional[str] = None
+    passport_expiry: Optional[str] = None
+    passport_issue_date: Optional[str] = None
+    employer_name: Optional[str] = None
+    company_name: Optional[str] = None
+    ssm_number: Optional[str] = None
+    job_title: Optional[str] = None
+    monthly_income: Optional[str] = None
+
+
+def get_field_label(field_name: str) -> str:
+    """Get human-readable label for a field"""
+    for category in USER_PROFILE_SCHEMA.values():
+        if field_name in category:
+            return category[field_name]["label"]
+    return field_name.replace("_", " ").title()
+
+
+def validate_user_for_service(user_id: str, service_type: str) -> Dict[str, Any]:
+    """Validate if user has all required data for a service"""
+    User = Query()
+    user = users_table.get(User.user_id == user_id)
+    
+    if not user:
+        user = {"user_id": user_id}
+    
+    requirements = SERVICE_VALIDATION_REQUIREMENTS.get(service_type)
+    if not requirements:
+        return {"valid": False, "error": "Unknown service type"}
+    
+    missing_fields = []
+    missing_documents = []
+    present_fields = []
+    
+    # Check required fields
+    for field in requirements["required_fields"]:
+        value = user.get(field)
+        if not value or (isinstance(value, str) and value.strip() == ""):
+            missing_fields.append({
+                "field": field,
+                "label": get_field_label(field)
+            })
+        else:
+            present_fields.append({
+                "field": field,
+                "label": get_field_label(field),
+                "value": value
+            })
+    
+    # Check required business fields if any
+    required_business = requirements.get("required_business_fields", [])
+    for field in required_business:
+        value = user.get(field)
+        if not value or (isinstance(value, str) and value.strip() == ""):
+            missing_fields.append({
+                "field": field,
+                "label": get_field_label(field),
+                "category": "business"
+            })
+    
+    # Check required documents
+    for doc in requirements["required_documents"]:
+        if not user.get(doc):
+            missing_documents.append({
+                "field": doc,
+                "label": get_field_label(doc)
+            })
+    
+    # Check security level
+    security_issues = []
+    required_security = requirements.get("required_security_level", "basic")
+    user_security = user.get("security_level", "basic")
+    
+    security_hierarchy = {"basic": 1, "verified": 2, "premium": 3}
+    user_level_num = security_hierarchy.get(user_security, 0)
+    required_level_num = security_hierarchy.get(required_security, 1)
+    
+    if user_level_num < required_level_num:
+        security_issues.append({
+            "issue": "insufficient_security_level",
+            "current_level": user_security,
+            "required_level": required_security,
+            "message": f"This service requires '{required_security}' security level. Your current level is '{user_security}'."
+        })
+        
+        # Check what's needed to upgrade
+        level_requirements = SECURITY_LEVELS.get(required_security, {}).get("requirements", [])
+        for req in level_requirements:
+            if not user.get(req):
+                security_issues.append({
+                    "issue": "missing_security_requirement",
+                    "requirement": req,
+                    "label": get_field_label(req)
+                })
+    
+    is_valid = (len(missing_fields) == 0 and 
+                len(missing_documents) == 0 and 
+                len(security_issues) == 0)
+    
+    return {
+        "valid": is_valid,
+        "service_type": service_type,
+        "service_description": requirements["description"],
+        "missing_fields": missing_fields,
+        "missing_documents": missing_documents,
+        "security_issues": security_issues,
+        "present_fields": present_fields,
+        "user_security_level": user_security,
+        "required_security_level": required_security,
+        "total_required": len(requirements["required_fields"]) + len(requirements["required_documents"]),
+        "total_present": len(present_fields) + (len(requirements["required_documents"]) - len(missing_documents)),
+        "completion_percentage": round(
+            (len(present_fields) + len(requirements["required_documents"]) - len(missing_documents)) /
+            max(1, len(requirements["required_fields"]) + len(requirements["required_documents"])) * 100
+        )
+    }
+
+
+@app.get("/user/profile")
+def get_user_profile(user_id: str = "default"):
+    """Get user profile data"""
+    User = Query()
+    user = users_table.get(User.user_id == user_id)
+    
+    if not user:
+        # Return empty profile with schema info
+        return {
+            "user_id": user_id,
+            "profile": {},
+            "schema": USER_PROFILE_SCHEMA,
+            "completion": {
+                "personal": 0,
+                "passport": 0,
+                "employment": 0,
+                "documents": 0,
+                "overall": 0
+            }
+        }
+    
+    # Calculate completion percentages
+    completion = {}
+    for category, fields in USER_PROFILE_SCHEMA.items():
+        filled = sum(1 for f in fields if user.get(f))
+        total = len(fields)
+        completion[category] = round(filled / max(1, total) * 100)
+    
+    # Overall completion
+    all_fields = [f for cat in USER_PROFILE_SCHEMA.values() for f in cat]
+    filled_total = sum(1 for f in all_fields if user.get(f))
+    completion["overall"] = round(filled_total / max(1, len(all_fields)) * 100)
+    
+    return {
+        "user_id": user_id,
+        "profile": {k: v for k, v in user.items() if k != "user_id"},
+        "schema": USER_PROFILE_SCHEMA,
+        "completion": completion
+    }
+
+
+@app.post("/user/profile")
+def update_user_profile(profile: UserProfileUpdate, user_id: str = "default"):
+    """Update user profile data"""
+    User = Query()
+    existing = users_table.get(User.user_id == user_id)
+    
+    # Convert to dict and remove None values
+    profile_data = {k: v for k, v in profile.model_dump().items() if v is not None}
+    profile_data["user_id"] = user_id
+    profile_data["updated_at"] = datetime.now().isoformat()
+    
+    if existing:
+        # Merge with existing data
+        merged = {**existing, **profile_data}
+        users_table.update(merged, User.user_id == user_id)
+    else:
+        users_table.insert(profile_data)
+    
+    return {
+        "message": "Profile updated successfully",
+        "updated_fields": list(profile_data.keys())
+    }
+
+
+@app.get("/user/validate/{service_type}")
+def validate_for_service(service_type: str, user_id: str = "default"):
+    """
+    Validate if user has all required data for a specific service.
+    Returns what's missing so the user knows exactly what to provide.
+    """
+    result = validate_user_for_service(user_id, service_type)
+    
+    if "error" in result:
+        raise HTTPException(status_code=400, detail=result["error"])
+    
+    return result
+
+
+@app.get("/user/requirements/{service_type}")
+def get_service_requirements(service_type: str):
+    """Get the list of requirements for a service"""
+    requirements = SERVICE_VALIDATION_REQUIREMENTS.get(service_type)
+    if not requirements:
+        raise HTTPException(status_code=404, detail=f"Unknown service: {service_type}")
+    
+    # Build detailed requirements with labels
+    detailed_fields = []
+    for field in requirements["required_fields"]:
+        detailed_fields.append({
+            "field": field,
+            "label": get_field_label(field),
+            "type": "field"
+        })
+    
+    for doc in requirements["required_documents"]:
+        detailed_fields.append({
+            "field": doc,
+            "label": get_field_label(doc),
+            "type": "document"
+        })
+    
+    return {
+        "service_type": service_type,
+        "description": requirements["description"],
+        "requirements": detailed_fields,
+        "total_requirements": len(detailed_fields)
+    }
+
+
+@app.post("/user/document/{document_type}")
+async def mark_document_uploaded(document_type: str, user_id: str = "default"):
+    """Mark a document as uploaded in the user profile"""
+    valid_docs = ["birth_cert_uploaded", "ic_uploaded", "passport_uploaded", "photo_uploaded"]
+    
+    if document_type not in valid_docs:
+        raise HTTPException(status_code=400, detail=f"Invalid document type. Valid: {valid_docs}")
+    
+    User = Query()
+    existing = users_table.get(User.user_id == user_id)
+    
+    if existing:
+        existing[document_type] = True
+        existing["updated_at"] = datetime.now().isoformat()
+        users_table.update(existing, User.user_id == user_id)
+    else:
+        users_table.insert({
+            "user_id": user_id,
+            document_type: True,
+            "updated_at": datetime.now().isoformat()
+        })
+    
+    return {"message": f"Document '{get_field_label(document_type)}' marked as uploaded"}
+
+
+@app.post("/task/validate-and-create")
+def validate_and_create_task(request: TaskCreateRequest):
+    """
+    Validate user has all requirements before creating a task.
+    If validation fails, returns what's missing instead of creating the task.
+    """
+    # First validate
+    validation = validate_user_for_service(request.user_id or "default", request.task_type)
+    
+    if not validation["valid"]:
+        return {
+            "success": False,
+            "message": "Cannot start this task - some information is missing",
+            "validation": validation,
+            "missing_info": {
+                "fields": validation["missing_fields"],
+                "documents": validation["missing_documents"]
+            },
+            "hint": "Please update your profile with the missing information before starting this task."
+        }
+    
+    # Validation passed - create the task
+    if request.task_type not in AGENTIC_SERVICES:
+        raise HTTPException(status_code=400, detail=f"Unknown task type: {request.task_type}")
+    
+    service = AGENTIC_SERVICES[request.task_type]
+    task_id = str(uuid.uuid4())[:8]
+    
+    task = {
+        "id": task_id,
+        "type": request.task_type,
+        "name": service["name"],
+        "icon": service["icon"],
+        "description": service["description"],
+        "steps": service["steps"],
+        "current_step": 1,
+        "total_steps": len(service["steps"]),
+        "status": "in_progress",
+        "user_id": request.user_id or "default",
+        "created_at": datetime.now().isoformat(),
+        "updated_at": datetime.now().isoformat(),
+        "documents": [],
+        "validation_passed": True,
+        "user_data": validation["present_fields"]  # Include user data for autofill
+    }
+    
+    active_tasks[task_id] = task
+    
+    return {
+        "success": True,
+        "message": f"Task created: {service['name']}",
+        "task": task,
+        "autofill_data": {f["field"]: f["value"] for f in validation["present_fields"]}
+    }
+
+
+@app.get("/validation/schema")
+def get_profile_schema():
+    """Get the complete user profile schema with all required fields"""
+    return {
+        "schema": USER_PROFILE_SCHEMA,
+        "service_requirements": SERVICE_VALIDATION_REQUIREMENTS
+    }
+
+
+# ============== AUTO-VERIFICATION AGENT ==============
+
+# Eligibility rules for each service
+ELIGIBILITY_RULES = {
+    "visa_application": [
+        {"rule_id": "passport_valid", "name": "Passport Validity", "description": "Passport must be valid for at least 6 months", "check_field": "passport_expiry", "severity": "critical"},
+        {"rule_id": "passport_exists", "name": "Passport Registered", "description": "Must have a valid passport number", "check_field": "passport_number", "severity": "critical"},
+        {"rule_id": "age_check", "name": "Age Verification", "description": "Must be at least 18 years old", "check_field": "date_of_birth", "severity": "critical"},
+        {"rule_id": "security_level", "name": "Security Verification", "description": "Account must be verified level or higher", "check_field": "security_level", "severity": "high"},
+        {"rule_id": "contact_info", "name": "Contact Information", "description": "Valid phone and email required", "check_field": "phone,email", "severity": "medium"},
+    ],
+    "passport_renewal": [
+        {"rule_id": "nationality_check", "name": "Nationality", "description": "Must be Malaysian citizen", "check_field": "nationality", "severity": "critical"},
+        {"rule_id": "ic_exists", "name": "IC Registered", "description": "Must have MyKad number", "check_field": "ic_number", "severity": "critical"},
+        {"rule_id": "old_passport_check", "name": "Old Passport", "description": "Old passport number for reference", "check_field": "passport_number", "severity": "high"},
+        {"rule_id": "passport_expiry_check", "name": "Expiry Check", "description": "Check if passport needs renewal (expiring soon or expired)", "check_field": "passport_expiry", "severity": "medium"},
+    ],
+    "ic_replacement": [
+        {"rule_id": "nationality_check", "name": "Nationality", "description": "Must be Malaysian citizen", "check_field": "nationality", "severity": "critical"},
+        {"rule_id": "ic_exists", "name": "IC Number Known", "description": "Previous IC number required", "check_field": "ic_number", "severity": "critical"},
+        {"rule_id": "address_check", "name": "Address Verification", "description": "Current address required", "check_field": "address", "severity": "high"},
+        {"rule_id": "biometric_check", "name": "Biometric Registered", "description": "Must have biometric on file", "check_field": "biometric_registered", "severity": "medium"},
+    ],
+    "foreign_worker_permit": [
+        {"rule_id": "employer_registered", "name": "Employer Verification", "description": "Employer must be registered", "check_field": "employer_name", "severity": "critical"},
+        {"rule_id": "ssm_check", "name": "SSM Registration", "description": "Valid SSM number required", "check_field": "ssm_number", "severity": "critical"},
+        {"rule_id": "business_type", "name": "Business Type", "description": "Business entity type must be specified", "check_field": "business_type", "severity": "high"},
+        {"rule_id": "security_premium", "name": "Premium Security", "description": "Premium security level required for FW permit", "check_field": "security_level", "severity": "critical"},
+    ],
+    "tax_filing": [
+        {"rule_id": "ic_check", "name": "IC Verification", "description": "Valid IC number for tax reference", "check_field": "ic_number", "severity": "critical"},
+        {"rule_id": "income_declared", "name": "Income Information", "description": "Income sources must be declared", "check_field": "monthly_income", "severity": "high"},
+        {"rule_id": "tax_number", "name": "Tax Number", "description": "LHDN tax number check", "check_field": "tax_number", "severity": "medium"},
+    ]
+}
+
+
+def run_auto_verification(user_id: str, service_type: str) -> Dict[str, Any]:
+    """Auto-verification agent that checks all eligibility rules"""
+    User = Query()
+    user = users_table.get(User.user_id == user_id)
+    
+    if not user:
+        user = {"user_id": user_id}
+    
+    rules = ELIGIBILITY_RULES.get(service_type, [])
+    if not rules:
+        return {"error": "No eligibility rules defined for this service"}
+    
+    verification_results = []
+    passed_count = 0
+    failed_count = 0
+    warnings_count = 0
+    
+    for rule in rules:
+        result = {
+            "rule_id": rule["rule_id"],
+            "name": rule["name"],
+            "description": rule["description"],
+            "severity": rule["severity"],
+            "status": "pending",
+            "message": "",
+            "value_found": None
+        }
+        
+        check_fields = rule["check_field"].split(",")
+        
+        # Perform the check based on rule type
+        if rule["rule_id"] == "passport_valid":
+            passport_expiry = user.get("passport_expiry", "")
+            if passport_expiry:
+                try:
+                    expiry_date = datetime.fromisoformat(passport_expiry)
+                    months_remaining = (expiry_date - datetime.now()).days / 30
+                    result["value_found"] = passport_expiry
+                    if months_remaining >= 6:
+                        result["status"] = "passed"
+                        result["message"] = f"✅ Passport valid until {passport_expiry} ({int(months_remaining)} months remaining)"
+                        passed_count += 1
+                    else:
+                        result["status"] = "failed"
+                        result["message"] = f"❌ Passport expires too soon ({passport_expiry}). Need at least 6 months validity."
+                        failed_count += 1
+                except:
+                    result["status"] = "failed"
+                    result["message"] = "❌ Invalid passport expiry date format"
+                    failed_count += 1
+            else:
+                result["status"] = "failed"
+                result["message"] = "❌ No passport expiry date on record"
+                failed_count += 1
+        
+        elif rule["rule_id"] == "passport_expiry_check":
+            passport_expiry = user.get("passport_expiry", "")
+            if passport_expiry:
+                try:
+                    expiry_date = datetime.fromisoformat(passport_expiry)
+                    months_remaining = (expiry_date - datetime.now()).days / 30
+                    result["value_found"] = passport_expiry
+                    if months_remaining <= 0:
+                        result["status"] = "passed"
+                        result["message"] = f"✅ Passport expired on {passport_expiry} - renewal eligible"
+                        passed_count += 1
+                    elif months_remaining <= 6:
+                        result["status"] = "passed"
+                        result["message"] = f"✅ Passport expiring soon ({passport_expiry}) - renewal eligible"
+                        passed_count += 1
+                    else:
+                        result["status"] = "warning"
+                        result["message"] = f"⚠️ Passport still valid until {passport_expiry}. Early renewal available."
+                        warnings_count += 1
+                except:
+                    result["status"] = "warning"
+                    result["message"] = "⚠️ Could not parse passport expiry"
+                    warnings_count += 1
+            else:
+                result["status"] = "passed"
+                result["message"] = "✅ No existing passport - new application"
+                passed_count += 1
+        
+        elif rule["rule_id"] == "age_check":
+            dob = user.get("date_of_birth", "")
+            if dob:
+                try:
+                    birth_date = datetime.fromisoformat(dob)
+                    age = (datetime.now() - birth_date).days // 365
+                    result["value_found"] = f"{age} years old"
+                    if age >= 18:
+                        result["status"] = "passed"
+                        result["message"] = f"✅ Age verified: {age} years old"
+                        passed_count += 1
+                    else:
+                        result["status"] = "failed"
+                        result["message"] = f"❌ Must be 18+ years old. Current age: {age}"
+                        failed_count += 1
+                except:
+                    result["status"] = "failed"
+                    result["message"] = "❌ Invalid date of birth format"
+                    failed_count += 1
+            else:
+                result["status"] = "failed"
+                result["message"] = "❌ Date of birth not on record"
+                failed_count += 1
+        
+        elif rule["rule_id"] == "nationality_check":
+            nationality = user.get("nationality", "")
+            result["value_found"] = nationality
+            if nationality and nationality.lower() == "malaysian":
+                result["status"] = "passed"
+                result["message"] = f"✅ Nationality verified: {nationality}"
+                passed_count += 1
+            else:
+                result["status"] = "failed"
+                result["message"] = f"❌ Must be Malaysian citizen. Found: {nationality or 'Not specified'}"
+                failed_count += 1
+        
+        elif rule["rule_id"] == "security_level":
+            level = user.get("security_level", "basic")
+            result["value_found"] = level
+            if level in ["verified", "premium"]:
+                result["status"] = "passed"
+                result["message"] = f"✅ Security level: {level}"
+                passed_count += 1
+            else:
+                result["status"] = "failed"
+                result["message"] = f"❌ Need 'verified' or 'premium' level. Current: {level}"
+                failed_count += 1
+        
+        elif rule["rule_id"] == "security_premium":
+            level = user.get("security_level", "basic")
+            result["value_found"] = level
+            if level == "premium":
+                result["status"] = "passed"
+                result["message"] = f"✅ Premium security level verified"
+                passed_count += 1
+            else:
+                result["status"] = "failed"
+                result["message"] = f"❌ Premium security required. Current: {level}"
+                failed_count += 1
+        
+        elif rule["rule_id"] == "biometric_check":
+            biometric = user.get("biometric_registered", False)
+            result["value_found"] = str(biometric)
+            if biometric:
+                result["status"] = "passed"
+                result["message"] = "✅ Biometric data on file"
+                passed_count += 1
+            else:
+                result["status"] = "warning"
+                result["message"] = "⚠️ Biometric not registered - will need to capture at office"
+                warnings_count += 1
+        
+        else:
+            # Generic field presence check
+            all_found = True
+            values = []
+            for field in check_fields:
+                value = user.get(field.strip())
+                if value and (not isinstance(value, str) or value.strip()):
+                    values.append(f"{field}: {value}")
+                else:
+                    all_found = False
+            
+            if all_found:
+                result["status"] = "passed"
+                result["value_found"] = ", ".join(values)
+                result["message"] = f"✅ {rule['name']} verified"
+                passed_count += 1
+            elif rule["severity"] == "critical":
+                result["status"] = "failed"
+                result["message"] = f"❌ {rule['name']} - Required field(s) missing"
+                failed_count += 1
+            else:
+                result["status"] = "warning"
+                result["message"] = f"⚠️ {rule['name']} - Optional field(s) missing"
+                warnings_count += 1
+        
+        verification_results.append(result)
+    
+    # Overall eligibility result
+    overall_eligible = failed_count == 0
+    
+    return {
+        "eligible": overall_eligible,
+        "service_type": service_type,
+        "verification_timestamp": datetime.now().isoformat(),
+        "summary": {
+            "total_checks": len(rules),
+            "passed": passed_count,
+            "failed": failed_count,
+            "warnings": warnings_count,
+            "pass_rate": round(passed_count / max(1, len(rules)) * 100)
+        },
+        "results": verification_results,
+        "recommendation": "Proceed with application" if overall_eligible else "Please fix the failed checks before proceeding"
+    }
+
+
+@app.get("/agent/verify/{service_type}")
+def verify_eligibility(service_type: str, user_id: str = "default"):
+    """
+    Auto-verification agent that checks all eligibility requirements.
+    User doesn't need to do anything - agent runs all checks automatically
+    and returns what was verified.
+    """
+    return run_auto_verification(user_id, service_type)
+
+
+@app.post("/task/start-with-verification")
+def start_task_with_auto_verification(request: TaskCreateRequest):
+    """
+    Start a task with automatic eligibility verification.
+    Agent runs all checks first, then creates task if eligible.
+    """
+    user_id = request.user_id or "default"
+    
+    # Run auto-verification
+    verification = run_auto_verification(user_id, request.task_type)
+    
+    if not verification.get("eligible", False):
+        return {
+            "success": False,
+            "message": "Eligibility check failed",
+            "auto_verification": verification,
+            "action_required": "Please update your profile to fix the failed checks"
+        }
+    
+    # Also run the standard validation
+    validation = validate_user_for_service(user_id, request.task_type)
+    
+    if not validation["valid"]:
+        return {
+            "success": False,
+            "message": "Profile validation failed",
+            "auto_verification": verification,
+            "validation": validation,
+            "action_required": "Please complete your profile with the missing information"
+        }
+    
+    # Both passed - create the task
+    if request.task_type not in AGENTIC_SERVICES:
+        raise HTTPException(status_code=400, detail=f"Unknown task type: {request.task_type}")
+    
+    service = AGENTIC_SERVICES[request.task_type]
+    task_id = str(uuid.uuid4())[:8]
+    
+    # Skip the first "verification" step since we already did it automatically
+    task = {
+        "id": task_id,
+        "type": request.task_type,
+        "name": service["name"],
+        "icon": service["icon"],
+        "description": service["description"],
+        "steps": service["steps"],
+        "current_step": 2,  # Skip step 1 (eligibility check)
+        "total_steps": len(service["steps"]),
+        "status": "in_progress",
+        "user_id": user_id,
+        "created_at": datetime.now().isoformat(),
+        "updated_at": datetime.now().isoformat(),
+        "documents": [],
+        "auto_verification": verification,
+        "user_data": validation["present_fields"]
+    }
+    
+    active_tasks[task_id] = task
+    
+    return {
+        "success": True,
+        "message": f"✅ Eligibility verified! Task started: {service['name']}",
+        "task": task,
+        "auto_verification": verification,
+        "skipped_step": "Step 1 (Eligibility Check) - Auto-completed by agent",
+        "current_step": service["steps"][1] if len(service["steps"]) > 1 else None,
+        "autofill_data": {f["field"]: f["value"] for f in validation["present_fields"]}
+    }
+
