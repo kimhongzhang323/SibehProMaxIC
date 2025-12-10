@@ -5,6 +5,7 @@ import 'services_page.dart';
 import 'chat_page.dart';
 import 'landing_page.dart';
 import 'splash_page.dart';
+import 'onboarding_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -40,6 +41,7 @@ class AppWrapper extends StatefulWidget {
 class _AppWrapperState extends State<AppWrapper> {
   bool _isLoading = true;
   bool _showLanding = true;
+  bool _showVerification = false;
   bool _showSplash = false;
 
   @override
@@ -51,11 +53,13 @@ class _AppWrapperState extends State<AppWrapper> {
   Future<void> _checkAppStatus() async {
     final prefs = await SharedPreferences.getInstance();
     final landingSeen = prefs.getBool('landing_page_seen') ?? false;
-    final shouldShowSplash = landingSeen;
+    final onboardingComplete = prefs.getBool('onboarding_complete') ?? false;
+    final shouldShowSplash = landingSeen && onboardingComplete;
 
     if (!mounted) return;
     setState(() {
       _showLanding = !landingSeen;
+      _showVerification = landingSeen && !onboardingComplete;
       _showSplash = shouldShowSplash;
       _isLoading = false;
     });
@@ -80,6 +84,23 @@ class _AppWrapperState extends State<AppWrapper> {
     if (!mounted) return;
     setState(() {
       _showLanding = false;
+      _showVerification = true;
+    });
+  }
+
+  void _goBackToLanding() {
+    setState(() {
+      _showVerification = false;
+      _showLanding = true;
+    });
+  }
+
+  Future<void> _completeOnboarding() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('onboarding_complete', true);
+    if (!mounted) return;
+    setState(() {
+      _showVerification = false;
       _showSplash = true;
     });
     _startSplashTimer();
@@ -96,6 +117,13 @@ class _AppWrapperState extends State<AppWrapper> {
 
     if (_showLanding) {
       return LandingPage(onGetStarted: _completeLanding);
+    }
+
+    if (_showVerification) {
+      return OnboardingPage(
+        onComplete: _completeOnboarding,
+        onBack: _goBackToLanding,
+      );
     }
 
     if (_showSplash) {

@@ -1,10 +1,13 @@
 import 'dart:async';
+import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'widgets/glassy_button.dart';
 
 class OnboardingPage extends StatefulWidget {
   final VoidCallback onComplete;
+  final VoidCallback? onBack;
   
-  const OnboardingPage({super.key, required this.onComplete});
+  const OnboardingPage({super.key, required this.onComplete, this.onBack});
 
   @override
   State<OnboardingPage> createState() => _OnboardingPageState();
@@ -13,10 +16,9 @@ class OnboardingPage extends StatefulWidget {
 class _OnboardingPageState extends State<OnboardingPage> with SingleTickerProviderStateMixin {
   int _currentStep = 0;
   bool _isProcessing = false;
-  late AnimationController _logoController;
-  late Animation<double> _logoScaleAnimation;
-  late Animation<double> _logoOpacityAnimation;
-  bool _showLogoAnimation = true;
+  late AnimationController _pageController;
+  late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
   
   // IC Data (editable)
   Map<String, String> _icData = {};
@@ -41,45 +43,40 @@ class _OnboardingPageState extends State<OnboardingPage> with SingleTickerProvid
   @override
   void initState() {
     super.initState();
-    _logoController = AnimationController(
-      duration: const Duration(milliseconds: 1500),
+    _pageController = AnimationController(
+      duration: const Duration(milliseconds: 600),
       vsync: this,
     );
     
-    _logoScaleAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _logoController,
-        curve: const Interval(0.0, 0.6, curve: Curves.elasticOut),
-      ),
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _pageController, curve: Curves.easeIn),
     );
-    
-    _logoOpacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _logoController,
-        curve: const Interval(0.0, 0.8, curve: Curves.easeIn),
-      ),
-    );
-    
-    _startLogoAnimation();
-  }
 
-  void _startLogoAnimation() async {
-    await _logoController.forward();
-    await Future.delayed(const Duration(milliseconds: 800));
-    if (mounted) {
-      setState(() {
-        _showLogoAnimation = false;
-      });
-    }
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.1),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(parent: _pageController, curve: Curves.easeOutCubic),
+    );
+    
+    _pageController.forward();
   }
 
   @override
   void dispose() {
-    _logoController.dispose();
+    _pageController.dispose();
     _nameController.dispose();
     _icNumberController.dispose();
     _addressController.dispose();
     super.dispose();
+  }
+
+  void _changeStep(int newStep) {
+    _pageController.reset();
+    setState(() {
+      _currentStep = newStep;
+    });
+    _pageController.forward();
   }
 
   void _simulateIcScan() async {
@@ -99,7 +96,7 @@ class _OnboardingPageState extends State<OnboardingPage> with SingleTickerProvid
       _icNumberController.text = _icData['ic_number']!;
       _addressController.text = _icData['address']!;
       _isProcessing = false;
-      _currentStep = 1; // Go to validation step
+      _changeStep(1); // Go to validation step
     });
   }
 
@@ -111,7 +108,7 @@ class _OnboardingPageState extends State<OnboardingPage> with SingleTickerProvid
     
     setState(() {
       _icValidated = true;
-      _currentStep = 2; // Go to passport step
+      _changeStep(2); // Go to passport step
     });
   }
 
@@ -141,7 +138,7 @@ class _OnboardingPageState extends State<OnboardingPage> with SingleTickerProvid
       _passportScanned = true;
       _hasMismatch = _mismatchFields.isNotEmpty;
       if (!_hasMismatch) {
-        _currentStep = 3; // Proceed to biometric
+        _changeStep(3); // Proceed to biometric
       }
       // If mismatch, stay on passport step to show warning
     });
@@ -150,14 +147,14 @@ class _OnboardingPageState extends State<OnboardingPage> with SingleTickerProvid
   void _skipPassport() {
     setState(() {
       _passportSkipped = true;
-      _currentStep = 3; // Go to biometric
+      _changeStep(3); // Go to biometric
     });
   }
 
   void _proceedDespiteMismatch() {
     // User acknowledges mismatch, proceed without updating IC data
     setState(() {
-      _currentStep = 3;
+      _changeStep(3);
     });
   }
 
@@ -166,7 +163,7 @@ class _OnboardingPageState extends State<OnboardingPage> with SingleTickerProvid
     setState(() {
       _hasMismatch = false;
       _passportScanned = false;
-      _currentStep = 1; // Back to IC validation
+      _changeStep(1); // Back to IC validation
     });
   }
 
@@ -182,91 +179,84 @@ class _OnboardingPageState extends State<OnboardingPage> with SingleTickerProvid
         _faceIdDone = true;
       }
       if (_fingerprintDone && _faceIdDone) {
-        _currentStep = 4; // Complete
+        _changeStep(4); // Complete
       }
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_showLogoAnimation) {
-      return Scaffold(
-        backgroundColor: Colors.white,
-        body: SafeArea(
-          child: Center(
-            child: AnimatedBuilder(
-              animation: _logoController,
-              builder: (context, child) {
-                return Opacity(
-                  opacity: _logoOpacityAnimation.value,
-                  child: Transform.scale(
-                    scale: _logoScaleAnimation.value,
-                    child: _buildAnimatedLogo(),
-                  ),
-                );
-              },
-            ),
-          ),
-        ),
-      );
-    }
-
     return Scaffold(
       backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 28),
-          child: Column(
-            children: [
-              const SizedBox(height: 40),
-              _buildProgressBar(),
-              const SizedBox(height: 40),
-              Expanded(child: _buildCurrentStep()),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF0E4CFF),
+              Color(0xFF4C3DEB),
+              Color(0xFF0EA6C1),
+              Color(0xFF9B59B6),
             ],
+            stops: [0.05, 0.35, 0.65, 0.95],
+          ),
+        ),
+        child: SafeArea(
+          child: FadeTransition(
+            opacity: _fadeAnimation,
+            child: SlideTransition(
+              position: _slideAnimation,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 28),
+                child: Column(
+                  children: [
+                    const SizedBox(height: 40),
+                    _buildTopBar(),
+                    const SizedBox(height: 32),
+                    _buildProgressBar(),
+                    const SizedBox(height: 40),
+                    Expanded(child: _buildCurrentStep()),
+                  ],
+                ),
+              ),
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildAnimatedLogo() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
+  Widget _buildTopBar() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Container(
-          width: 140,
-          height: 140,
-          decoration: BoxDecoration(
-            color: Colors.black,
-            borderRadius: BorderRadius.circular(35),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.3),
-                blurRadius: 30,
-                offset: const Offset(0, 15),
-              ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(35),
-            child: Image.asset(
-              'assets/images/IC.jpg',
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return const Icon(Icons.wallet, color: Colors.white, size: 70);
-              },
+        if (widget.onBack != null)
+          GestureDetector(
+            onTap: widget.onBack,
+            child: Icon(
+              Icons.arrow_back_ios,
+              color: Colors.white.withOpacity(0.9),
+              size: 22,
             ),
-          ),
+          )
+        else
+          const SizedBox(width: 26),
+        Row(
+          children: [
+            Icon(Icons.auto_awesome, color: Colors.white.withOpacity(0.9), size: 22),
+            const SizedBox(width: 6),
+            Text(
+              'Journey',
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.95),
+                fontWeight: FontWeight.w700,
+                fontSize: 18,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(height: 24),
-        const Text(
-          'Journey',
-          style: TextStyle(
-            fontSize: 32,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.2,
-          ),
-        ),
+        const SizedBox(width: 26),
       ],
     );
   }
@@ -281,8 +271,19 @@ class _OnboardingPageState extends State<OnboardingPage> with SingleTickerProvid
             margin: EdgeInsets.only(right: index < 4 ? 8 : 0),
             height: 4,
             decoration: BoxDecoration(
-              color: isCompleted || isCurrent ? Colors.black : Colors.grey[200],
+              color: isCompleted || isCurrent 
+                  ? Colors.white.withOpacity(0.9)
+                  : Colors.white.withOpacity(0.3),
               borderRadius: BorderRadius.circular(2),
+              boxShadow: (isCompleted || isCurrent)
+                  ? [
+                      BoxShadow(
+                        color: Colors.white.withOpacity(0.5),
+                        blurRadius: 4,
+                        spreadRadius: 1,
+                      ),
+                    ]
+                  : null,
             ),
           ),
         );
@@ -305,23 +306,72 @@ class _OnboardingPageState extends State<OnboardingPage> with SingleTickerProvid
     return Column(
       children: [
         const Spacer(),
-        Container(
-          width: 180, height: 180,
-          decoration: BoxDecoration(
-            color: Colors.grey[50],
-            borderRadius: BorderRadius.circular(90),
-            border: Border.all(color: Colors.grey[200]!, width: 2),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(90),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Container(
+              width: 180,
+              height: 180,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.15),
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white.withOpacity(0.3), width: 2),
+              ),
+              child: _isProcessing
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : Icon(
+                      Icons.credit_card,
+                      size: 70,
+                      color: Colors.white.withOpacity(0.9),
+                    ),
+            ),
           ),
-          child: _isProcessing
-              ? const Center(child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2))
-              : Icon(Icons.credit_card, size: 70, color: Colors.grey[400]),
         ),
         const SizedBox(height: 40),
-        const Text('Scan Your IC', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+        Text(
+          'Scan Your IC',
+          style: TextStyle(
+            fontSize: 32,
+            fontWeight: FontWeight.w800,
+            color: Colors.white.withOpacity(0.95),
+            shadows: [
+              Shadow(
+                color: Colors.black.withOpacity(0.25),
+                blurRadius: 12,
+              ),
+            ],
+          ),
+        ),
         const SizedBox(height: 12),
-        Text('Place your MyKad on a flat surface', textAlign: TextAlign.center, style: TextStyle(fontSize: 16, color: Colors.grey[500])),
+        Text(
+          'Place your MyKad on a flat surface',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 16,
+            color: Colors.white.withOpacity(0.85),
+            shadows: [
+              Shadow(
+                color: Colors.black.withOpacity(0.2),
+                blurRadius: 8,
+              ),
+            ],
+          ),
+        ),
         const Spacer(),
-        _buildPrimaryButton(_isProcessing ? 'Scanning...' : 'Start Scanning', _isProcessing ? null : _simulateIcScan),
+        GlassyButton(
+          onPressed: _isProcessing ? null : _simulateIcScan,
+          borderRadius: BorderRadius.circular(16),
+          child: Text(
+            _isProcessing ? 'Scanning...' : 'Start Scanning',
+            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+          ),
+        ),
         const SizedBox(height: 40),
       ],
     );
@@ -333,9 +383,34 @@ class _OnboardingPageState extends State<OnboardingPage> with SingleTickerProvid
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 20),
-          const Text('Verify Your Details', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+          Text(
+            'Verify Your Details',
+            style: TextStyle(
+              fontSize: 32,
+              fontWeight: FontWeight.w800,
+              color: Colors.white.withOpacity(0.95),
+              shadows: [
+                Shadow(
+                  color: Colors.black.withOpacity(0.25),
+                  blurRadius: 12,
+                ),
+              ],
+            ),
+          ),
           const SizedBox(height: 8),
-          Text('Please verify and edit if needed', style: TextStyle(fontSize: 16, color: Colors.grey[500])),
+          Text(
+            'Please verify and edit if needed',
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.white.withOpacity(0.85),
+              shadows: [
+                Shadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 8,
+                ),
+              ],
+            ),
+          ),
           const SizedBox(height: 32),
           
           _buildEditableField('Full Name', _nameController, Icons.person),
@@ -347,7 +422,14 @@ class _OnboardingPageState extends State<OnboardingPage> with SingleTickerProvid
           _buildReadOnlyField('Gender', _icData['gender'] ?? '', Icons.wc),
           
           const SizedBox(height: 32),
-          _buildPrimaryButton('Confirm Details', _validateIcData),
+          GlassyButton(
+            onPressed: _validateIcData,
+            borderRadius: BorderRadius.circular(16),
+            child: const Text(
+              'Confirm Details',
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+            ),
+          ),
           const SizedBox(height: 40),
         ],
       ),
@@ -360,22 +442,53 @@ class _OnboardingPageState extends State<OnboardingPage> with SingleTickerProvid
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: TextStyle(fontSize: 13, color: Colors.grey[600], fontWeight: FontWeight.w500)),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            decoration: BoxDecoration(
-              color: Colors.grey[50],
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey[200]!),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              color: Colors.white.withOpacity(0.9),
+              fontWeight: FontWeight.w600,
+              shadows: [
+                Shadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 4,
+                ),
+              ],
             ),
-            child: TextField(
-              controller: controller,
-              maxLines: maxLines,
-              decoration: InputDecoration(
-                icon: Icon(icon, color: Colors.grey[400], size: 20),
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(vertical: 14),
+          ),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.white.withOpacity(0.3)),
+                ),
+                child: TextField(
+                  controller: controller,
+                  maxLines: maxLines,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  decoration: InputDecoration(
+                    labelText: label,
+                    labelStyle: TextStyle(
+                      color: Colors.white.withOpacity(0.7),
+                      fontSize: 14,
+                    ),
+                    prefixIcon: Icon(icon, color: Colors.white.withOpacity(0.9), size: 22),
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                  ),
+                  cursorColor: Colors.white,
+                ),
               ),
             ),
           ),
@@ -390,22 +503,49 @@ class _OnboardingPageState extends State<OnboardingPage> with SingleTickerProvid
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: TextStyle(fontSize: 13, color: Colors.grey[600], fontWeight: FontWeight.w500)),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.grey[100],
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: [
-                Icon(icon, color: Colors.grey[400], size: 20),
-                const SizedBox(width: 12),
-                Text(value, style: TextStyle(fontSize: 16, color: Colors.grey[600])),
-                const Spacer(),
-                Icon(Icons.lock, size: 16, color: Colors.grey[400]),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              color: Colors.white.withOpacity(0.9),
+              fontWeight: FontWeight.w600,
+              shadows: [
+                Shadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 4,
+                ),
               ],
+            ),
+          ),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.white.withOpacity(0.25)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(icon, color: Colors.white.withOpacity(0.8), size: 20),
+                    const SizedBox(width: 12),
+                    Text(
+                      value,
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.white.withOpacity(0.9),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const Spacer(),
+                    Icon(Icons.lock, size: 16, color: Colors.white.withOpacity(0.6)),
+                  ],
+                ),
+              ),
             ),
           ),
         ],
@@ -419,55 +559,109 @@ class _OnboardingPageState extends State<OnboardingPage> with SingleTickerProvid
       return Column(
         children: [
           const Spacer(),
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.orange.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.orange.withOpacity(0.3)),
-            ),
-            child: Column(
-              children: [
-                const Icon(Icons.warning_amber_rounded, size: 48, color: Colors.orange),
-                const SizedBox(height: 16),
-                const Text('Data Mismatch Detected', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 12),
-                Text(
-                  'The following fields differ between your IC and Passport:',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.grey[600]),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(24),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: Colors.white.withOpacity(0.4)),
                 ),
-                const SizedBox(height: 16),
-                ...(_mismatchFields.map((field) => Container(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.error_outline, color: Colors.orange, size: 20),
-                      const SizedBox(width: 12),
-                      Text(field, style: const TextStyle(fontWeight: FontWeight.w500)),
-                    ],
-                  ),
-                ))),
-                const SizedBox(height: 16),
-                Text(
-                  'Passport data will not update your IC details. Please update your IC first if needed.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.grey[500], fontSize: 13),
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.warning_amber_rounded,
+                      size: 56,
+                      color: Colors.white.withOpacity(0.95),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Data Mismatch Detected',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white.withOpacity(0.95),
+                        shadows: [
+                          Shadow(
+                            color: Colors.black.withOpacity(0.3),
+                            blurRadius: 8,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'The following fields differ between your IC and Passport:',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.85),
+                        shadows: [
+                          Shadow(
+                            color: Colors.black.withOpacity(0.2),
+                            blurRadius: 6,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    ...(_mismatchFields.map((field) => Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.white.withOpacity(0.3)),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.error_outline, color: Colors.white.withOpacity(0.9), size: 20),
+                          const SizedBox(width: 12),
+                          Text(
+                            field,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white.withOpacity(0.95),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ))),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Passport data will not update your IC details. Please update your IC first if needed.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.75),
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
           const Spacer(),
-          _buildPrimaryButton('Continue Anyway', _proceedDespiteMismatch),
+          GlassyButton(
+            onPressed: _proceedDespiteMismatch,
+            borderRadius: BorderRadius.circular(16),
+            child: const Text(
+              'Continue Anyway',
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+            ),
+          ),
           const SizedBox(height: 12),
           TextButton(
             onPressed: _goBackToEditIc,
-            child: const Text('Go Back to Edit IC', style: TextStyle(color: Colors.black, fontSize: 16)),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.white.withOpacity(0.9),
+            ),
+            child: const Text(
+              'Go Back to Edit IC',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            ),
           ),
           const SizedBox(height: 24),
         ],
@@ -477,36 +671,105 @@ class _OnboardingPageState extends State<OnboardingPage> with SingleTickerProvid
     return Column(
       children: [
         const Spacer(),
-        Container(
-          width: 180, height: 180,
-          decoration: BoxDecoration(
-            color: Colors.grey[50],
-            borderRadius: BorderRadius.circular(90),
-            border: Border.all(color: Colors.grey[200]!, width: 2),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(90),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Container(
+              width: 180,
+              height: 180,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.15),
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white.withOpacity(0.3), width: 2),
+              ),
+              child: _isProcessing
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : Icon(
+                      Icons.menu_book,
+                      size: 70,
+                      color: Colors.white.withOpacity(0.9),
+                    ),
+            ),
           ),
-          child: _isProcessing
-              ? const Center(child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2))
-              : Icon(Icons.menu_book, size: 70, color: Colors.grey[400]),
         ),
         const SizedBox(height: 40),
-        const Text('Scan Passport', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 12),
-        Text('Optional: Add passport for international travel', textAlign: TextAlign.center, style: TextStyle(fontSize: 16, color: Colors.grey[500])),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: Colors.blue.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(20),
+        Text(
+          'Scan Passport',
+          style: TextStyle(
+            fontSize: 32,
+            fontWeight: FontWeight.w800,
+            color: Colors.white.withOpacity(0.95),
+            shadows: [
+              Shadow(
+                color: Colors.black.withOpacity(0.25),
+                blurRadius: 12,
+              ),
+            ],
           ),
-          child: Text('IC data is locked after validation', style: TextStyle(fontSize: 12, color: Colors.blue[700])),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          'Optional: Add passport for international travel',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 16,
+            color: Colors.white.withOpacity(0.85),
+            shadows: [
+              Shadow(
+                color: Colors.black.withOpacity(0.2),
+                blurRadius: 8,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.white.withOpacity(0.3)),
+              ),
+              child: Text(
+                'IC data is locked after validation',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.white.withOpacity(0.9),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
         ),
         const Spacer(),
-        _buildPrimaryButton(_isProcessing ? 'Scanning...' : 'Scan Passport', _isProcessing ? null : _simulatePassportScan),
+        GlassyButton(
+          onPressed: _isProcessing ? null : _simulatePassportScan,
+          borderRadius: BorderRadius.circular(16),
+          child: Text(
+            _isProcessing ? 'Scanning...' : 'Scan Passport',
+            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+          ),
+        ),
         const SizedBox(height: 12),
         TextButton(
           onPressed: _skipPassport,
-          child: Text('Skip for now', style: TextStyle(color: Colors.grey[500], fontSize: 16)),
+          style: TextButton.styleFrom(
+            foregroundColor: Colors.white.withOpacity(0.85),
+          ),
+          child: const Text(
+            'Skip for now',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+          ),
         ),
         const SizedBox(height: 24),
       ],
@@ -517,16 +780,48 @@ class _OnboardingPageState extends State<OnboardingPage> with SingleTickerProvid
     return Column(
       children: [
         const Spacer(),
-        const Text('Biometric Verification', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+        Text(
+          'Biometric Verification',
+          style: TextStyle(
+            fontSize: 32,
+            fontWeight: FontWeight.w800,
+            color: Colors.white.withOpacity(0.95),
+            shadows: [
+              Shadow(
+                color: Colors.black.withOpacity(0.25),
+                blurRadius: 12,
+              ),
+            ],
+          ),
+        ),
         const SizedBox(height: 12),
-        Text('Complete both to secure your Digital ID', style: TextStyle(fontSize: 16, color: Colors.grey[500])),
+        Text(
+          'Complete both to secure your Digital ID',
+          style: TextStyle(
+            fontSize: 16,
+            color: Colors.white.withOpacity(0.85),
+            shadows: [
+              Shadow(
+                color: Colors.black.withOpacity(0.2),
+                blurRadius: 8,
+              ),
+            ],
+          ),
+        ),
         const SizedBox(height: 40),
         _buildBiometricCard(Icons.fingerprint, 'Fingerprint', _fingerprintDone, () => _simulateBiometric('fingerprint')),
         const SizedBox(height: 16),
         _buildBiometricCard(Icons.face, 'Face ID', _faceIdDone, () => _simulateBiometric('face')),
         const Spacer(),
         if (_fingerprintDone && _faceIdDone)
-          _buildPrimaryButton('Continue', () => setState(() => _currentStep = 4)),
+          GlassyButton(
+            onPressed: () => setState(() => _changeStep(4)),
+            borderRadius: BorderRadius.circular(16),
+            child: const Text(
+              'Continue',
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+            ),
+          ),
         const SizedBox(height: 40),
       ],
     );
@@ -535,29 +830,76 @@ class _OnboardingPageState extends State<OnboardingPage> with SingleTickerProvid
   Widget _buildBiometricCard(IconData icon, String title, bool isDone, VoidCallback onTap) {
     return GestureDetector(
       onTap: isDone ? null : onTap,
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: isDone ? Colors.black : Colors.grey[50],
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: isDone ? Colors.black : Colors.grey[200]!),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 48, height: 48,
-              decoration: BoxDecoration(
-                color: isDone ? Colors.white.withOpacity(0.2) : Colors.white,
-                borderRadius: BorderRadius.circular(14),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: isDone
+                  ? Colors.white.withOpacity(0.25)
+                  : Colors.white.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: isDone
+                    ? Colors.white.withOpacity(0.5)
+                    : Colors.white.withOpacity(0.3),
+                width: isDone ? 2 : 1,
               ),
-              child: Icon(isDone ? Icons.check : icon, color: isDone ? Colors.white : Colors.black, size: 24),
+              boxShadow: isDone
+                  ? [
+                      BoxShadow(
+                        color: Colors.white.withOpacity(0.3),
+                        blurRadius: 12,
+                        spreadRadius: 1,
+                      ),
+                    ]
+                  : null,
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Text(title, style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: isDone ? Colors.white : Colors.black)),
+            child: Row(
+              children: [
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: isDone
+                        ? Colors.white.withOpacity(0.3)
+                        : Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Icon(
+                    isDone ? Icons.check_circle : icon,
+                    color: Colors.white.withOpacity(0.95),
+                    size: 28,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white.withOpacity(0.95),
+                      shadows: [
+                        Shadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 4,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                if (!isDone)
+                  Icon(
+                    Icons.arrow_forward_ios,
+                    size: 18,
+                    color: Colors.white.withOpacity(0.7),
+                  ),
+              ],
             ),
-            if (!isDone) Icon(Icons.arrow_forward_ios, size: 18, color: Colors.grey[400]),
-          ],
+          ),
         ),
       ),
     );
@@ -567,37 +909,73 @@ class _OnboardingPageState extends State<OnboardingPage> with SingleTickerProvid
     return Column(
       children: [
         const Spacer(),
-        Container(
-          width: 100, height: 100,
-          decoration: BoxDecoration(color: Colors.black, borderRadius: BorderRadius.circular(50)),
-          child: const Icon(Icons.check, size: 50, color: Colors.white),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(60),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.25),
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white.withOpacity(0.4), width: 3),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.white.withOpacity(0.3),
+                    blurRadius: 20,
+                    spreadRadius: 2,
+                  ),
+                ],
+              ),
+              child: Icon(
+                Icons.check_circle,
+                size: 60,
+                color: Colors.white.withOpacity(0.95),
+              ),
+            ),
+          ),
         ),
         const SizedBox(height: 40),
-        const Text('All Set!', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
+        Text(
+          'All Set!',
+          style: TextStyle(
+            fontSize: 36,
+            fontWeight: FontWeight.w800,
+            color: Colors.white.withOpacity(0.95),
+            shadows: [
+              Shadow(
+                color: Colors.black.withOpacity(0.25),
+                blurRadius: 12,
+              ),
+            ],
+          ),
+        ),
         const SizedBox(height: 12),
-        Text('Your Digital ID is ready', style: TextStyle(fontSize: 16, color: Colors.grey[500])),
+        Text(
+          'Your Digital ID is ready',
+          style: TextStyle(
+            fontSize: 18,
+            color: Colors.white.withOpacity(0.85),
+            shadows: [
+              Shadow(
+                color: Colors.black.withOpacity(0.2),
+                blurRadius: 8,
+              ),
+            ],
+          ),
+        ),
         const Spacer(),
-        _buildPrimaryButton('Get Started', widget.onComplete),
+        GlassyButton(
+          onPressed: widget.onComplete,
+          borderRadius: BorderRadius.circular(16),
+          child: const Text(
+            'Get Started',
+            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+          ),
+        ),
         const SizedBox(height: 40),
       ],
-    );
-  }
-
-  Widget _buildPrimaryButton(String text, VoidCallback? onPressed) {
-    return SizedBox(
-      width: double.infinity,
-      height: 56,
-      child: ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.black,
-          foregroundColor: Colors.white,
-          disabledBackgroundColor: Colors.grey[300],
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          elevation: 0,
-        ),
-        child: Text(text, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
-      ),
     );
   }
 }
