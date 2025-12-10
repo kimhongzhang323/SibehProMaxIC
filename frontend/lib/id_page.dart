@@ -23,6 +23,10 @@ class _IdPageState extends State<IdPage> with TickerProviderStateMixin {
   bool _qrUnlocked = false;
   double _pullOffset = 0;
   static const double _pullMax = 400;
+  String _selectedCardTab = 'NRIC'; // 'NRIC', 'Driving Licence', 'Passport'
+  static const List<String> _cardTabs = ['NRIC', 'Driving Licence', 'Passport'];
+  static const double _cardPadding = 18;
+  late final PageController _cardController;
 
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -33,10 +37,19 @@ class _IdPageState extends State<IdPage> with TickerProviderStateMixin {
   int _qrCountdown = 30;
 
   final Map<String, dynamic> _passportData = {
-    'passport_number': 'A12345678',
+    'passport_number': 'A00000000',
     'nationality': 'MALAYSIA',
-    'issue_date': '2022-01-15',
-    'expiry_date': '2032-01-14',
+    'issue_date': '2017-08-31',
+    'expiry_date': '2024-08-31',
+    'type': 'P',
+    'country_code': 'MYS',
+    'identity_no': '930216146007',
+    'name': 'MAHATHIR BIN IDRUS',
+    'dob': '1993-02-16',
+    'sex': 'L-M',
+    'place_of_birth': 'KUALA LUMPUR',
+    'issuing_office': 'KUALA LUMPUR',
+    'height_cm': '174',
   };
 
   final List<Map<String, dynamic>> _visas = [
@@ -53,6 +66,10 @@ class _IdPageState extends State<IdPage> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+    _cardController = PageController(
+      viewportFraction: 0.93,
+      initialPage: _cardTabs.indexOf(_selectedCardTab),
+    );
     _animationController = AnimationController(vsync: this, duration: const Duration(milliseconds: 600));
     _fadeAnimation = CurvedAnimation(parent: _animationController, curve: Curves.easeInOut);
     
@@ -73,6 +90,7 @@ class _IdPageState extends State<IdPage> with TickerProviderStateMixin {
     _animationController.dispose();
     _revealController.dispose();
     _qrRefreshTimer?.cancel();
+    _cardController.dispose();
     super.dispose();
   }
 
@@ -320,20 +338,24 @@ class _IdPageState extends State<IdPage> with TickerProviderStateMixin {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                      Text(
-                        _isTravelMode ? 'Travel Mode' : 'Digital ID',
-                        style: const TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                      _buildModeToggle(),
-                    ]),
-                    const SizedBox(height: 24),
-                    AnimatedSwitcher(duration: const Duration(milliseconds: 300), child: _isTravelMode ? _buildTravelMode() : _buildIdMode()),
-                    const SizedBox(height: 20),
+                    // Welcome Section
+                    _buildWelcomeSection(),
+                    const SizedBox(height: 32),
+                    // My Cards Section
+                    _buildMyCardsSection(),
+                    const SizedBox(height: 32),
+                    // Last Used Shortcuts Section
+                    _buildLastUsedShortcutsSection(),
+                    // Original content (hidden by default, can be accessed via mode toggle)
+                    if (_isTravelMode) ...[
+                      AnimatedSwitcher(duration: const Duration(milliseconds: 300), child: _buildTravelMode()),
+                      const SizedBox(height: 20),
+                    ],
+                    // Keep original ID mode details accessible
+                    if (!_isTravelMode && _selectedCardTab == 'NRIC') ...[
+                      const SizedBox(height: 24),
+                      _buildDetailsSection(),
+                    ],
                   ],
                 ),
               ),
@@ -372,6 +394,681 @@ class _IdPageState extends State<IdPage> with TickerProviderStateMixin {
             ),
             Positioned(left: 0, right: 0, bottom: 0, child: _buildWatermark()),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWelcomeSection() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Welcome back,',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.white.withOpacity(0.9),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              _idData?['name'] ?? 'Andrew Tay Guo Qiang',
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
+        Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: Colors.white.withOpacity(0.25)),
+          ),
+          child: Icon(
+            Icons.settings,
+            color: Colors.white.withOpacity(0.9),
+            size: 22,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMyCardsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'My Cards',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        const SizedBox(height: 16),
+        // Card tabs
+        Row(
+          children: [
+            for (final label in _cardTabs) ...[
+              _buildCardTab(label, _selectedCardTab == label),
+              if (label != _cardTabs.last) const SizedBox(width: 8),
+            ],
+          ],
+        ),
+        const SizedBox(height: 20),
+        // Swipeable cards (same size, slide in/out horizontally)
+        SizedBox(
+          height: 252,
+          child: PageView.builder(
+            controller: _cardController,
+            itemCount: _cardTabs.length,
+            onPageChanged: (index) {
+              setState(() {
+                _selectedCardTab = _cardTabs[index];
+              });
+            },
+            itemBuilder: (context, index) {
+              final label = _cardTabs[index];
+              final isActive = label == _selectedCardTab;
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                margin: EdgeInsets.symmetric(horizontal: isActive ? 0 : 6, vertical: isActive ? 0 : 8),
+                child: _buildCardForLabel(label),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 16),
+        // Reveal QR button shown only for NRIC
+        if (_selectedCardTab == 'NRIC') _buildRevealButton(),
+      ],
+    );
+  }
+
+  Widget _buildCardTab(String label, bool isSelected) {
+    return GestureDetector(
+      onTap: () {
+        final targetIndex = _cardTabs.indexOf(label);
+        _cardController.animateToPage(
+          targetIndex,
+          duration: const Duration(milliseconds: 280),
+          curve: Curves.easeOutCubic,
+        );
+        setState(() {
+          _selectedCardTab = label;
+        });
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.red[500] : Colors.white.withOpacity(0.15),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? Colors.red[500]! : Colors.white.withOpacity(0.25),
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? Colors.white : Colors.white.withOpacity(0.9),
+            fontSize: 13,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNricCard() {
+    final idNumber = _idData?['id_number']?.toString() ?? 'S123456A';
+    final maskedId = idNumber.length > 4 
+        ? '${idNumber.substring(0, 1)}•••${idNumber.substring(idNumber.length - 3)}'
+        : 'S•••456A';
+    
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            color: const Color(0xFFFFE5E5).withOpacity(0.95),
+            border: Border.all(color: Colors.white.withOpacity(0.5)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.15),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Stack(
+            children: [
+              // Grid pattern background
+              Positioned.fill(
+                child: CustomPaint(
+                  painter: _GridPatternPainter(),
+                ),
+              ),
+              // Content
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'REPUBLIC OF SINGAPORE',
+                        style: TextStyle(
+                          color: Colors.grey[800],
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'NATIONAL DIGITAL IDENTITY CARD',
+                    style: TextStyle(
+                      color: Colors.grey[800],
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  // Main content
+                  Row(
+                    children: [
+                      // Photo
+                      Stack(
+                        children: [
+                          Container(
+                            width: 80,
+                            height: 80,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 2),
+                            ),
+                            child: ClipOval(
+                              child: Image.asset(
+                                'assets/images/IC.jpg',
+                                fit: BoxFit.cover,
+                                errorBuilder: (c, e, s) => Container(
+                                  color: Colors.grey[300],
+                                  child: const Icon(Icons.person, size: 40),
+                                ),
+                              ),
+                            ),
+                          ),
+                          // Globe overlay
+                          Positioned(
+                            bottom: 0,
+                            left: 0,
+                            child: Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: RadialGradient(
+                                  colors: [
+                                    Colors.blue.withOpacity(0.5),
+                                    Colors.purple.withOpacity(0.3),
+                                    Colors.transparent,
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(width: 16),
+                      // Details
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'NRIC NO.',
+                              style: TextStyle(
+                                color: Colors.grey[700],
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              maskedId,
+                              style: TextStyle(
+                                color: Colors.grey[900],
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Coat of arms
+                      Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.account_balance,
+                          size: 30,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+  Widget _buildDrivingLicenceCard() {
+    // For demonstration, we'll mock licence details.
+    final licenceNumber = _idData?['driving_licence_no']?.toString() ?? 'D1234567';
+    final maskedLicence = licenceNumber.length > 4
+        ? '${licenceNumber.substring(0, 1)}•••${licenceNumber.substring(licenceNumber.length - 3)}'
+        : 'D•••567';
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(_cardPadding),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            color: Colors.white.withOpacity(0.12),
+            border: Border.all(color: Colors.white.withOpacity(0.35)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.15),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  // Icon for Driving Licence
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.directions_car,
+                      size: 26,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Text(
+                    'DRIVING LICENCE',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.94),
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                      letterSpacing: 1.4,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  // Licence Number section
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'LICENCE NO.',
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.82),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          maskedLicence,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        // Mock: Class
+                        Row(
+                          children: [
+                            Text(
+                              'CLASS: ',
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.82),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                            Text(
+                              _idData?['licence_class'] ?? 'D',
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.95),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.6,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        // Mock: Valid Until
+                        Row(
+                          children: [
+                            Text(
+                              'VALID UNTIL: ',
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.82),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                            Text(
+                              _idData?['licence_expiry'] ?? '2030-12-31',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.6,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Coat of arms (use a suitable icon)
+                  Container(
+                    width: 50,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.19),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.badge,
+                      size: 30,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCardForLabel(String label) {
+    switch (label) {
+      case 'NRIC':
+        return GestureDetector(onTap: () => _showFullscreen('ic'), child: _buildIcCard());
+      case 'Driving Licence':
+        return _buildDrivingLicenceCard();
+      case 'Passport':
+      default:
+        return _buildPassportOptionCard();
+    }
+  }
+
+  Widget _buildPassportOptionCard() {
+    String _formatDate(String? iso) {
+      if (iso == null || iso.isEmpty) return 'N/A';
+      try {
+        final dt = DateTime.parse(iso);
+        const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+        return '${dt.day.toString().padLeft(2, '0')} ${months[dt.month - 1]} ${dt.year}';
+      } catch (_) {
+        return iso;
+      }
+    }
+
+    final name = _idData?['name'] ?? _passportData['name'];
+    final identityNo = _idData?['id_number'] ?? _passportData['identity_no'] ?? '—';
+    final passportNo = _passportData['passport_number'] ?? 'A00000000';
+    final type = _passportData['type'] ?? 'P';
+    final countryCode = _passportData['country_code'] ?? 'MYS';
+    final issue = _formatDate(_passportData['issue_date']);
+    final expiry = _formatDate(_passportData['expiry_date']);
+    final placeOfBirth = _passportData['place_of_birth'] ?? '—';
+    final issuingOffice = _passportData['issuing_office'] ?? '—';
+    final expiryColor = _getExpiryColor(_passportData['expiry_date'] ?? '');
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(_cardPadding),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            color: Colors.white.withOpacity(0.12),
+            border: Border.all(color: Colors.white.withOpacity(0.35)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.15),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'PASSPORT / PASSPORT',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.9),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.6,
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.18),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.white.withOpacity(0.25)),
+                    ),
+                    child: Text(
+                      'Type $type',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.95),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              // Name row
+              _passportDetailLine('Nama / Name', name ?? '—', bold: true),
+              const SizedBox(height: 10),
+              // Two-column concise layout
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _passportDetailLine('No. Pasport / Passport No.', passportNo, bold: true),
+                        const SizedBox(height: 6),
+                        _passportDetailLine('Tarikh Dikeluarkan / Date of Issue', issue),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _passportDetailLine('Kod Negara / Country Code', countryCode),
+                        const SizedBox(height: 8),
+                        _passportDetailLine('Tarikh Tamat / Date of Expiry', expiry, emphasize: true, color: expiryColor),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _passportDetailLine(String label, String value, {bool bold = false, bool emphasize = false, Color? color}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.white.withOpacity(0.78),
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.3,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          value,
+          style: TextStyle(
+            color: color ?? Colors.white,
+            fontSize: emphasize ? 14 : 13,
+            fontWeight: bold || emphasize ? FontWeight.w800 : FontWeight.w700,
+            letterSpacing: emphasize ? 0.8 : 0.4,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLastUsedShortcutsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Last used shortcuts',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            _buildShortcutItem('my careers future'),
+            const SizedBox(width: 12),
+            _buildShortcutItem('other'),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildShortcutItem(String label) {
+    return Expanded(
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white.withOpacity(0.25)),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(
+                    Icons.work_outline,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.9),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -454,21 +1151,21 @@ class _IdPageState extends State<IdPage> with TickerProviderStateMixin {
         filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(_cardPadding),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
-            color: Colors.white.withOpacity(0.12),
-            border: Border.all(color: Colors.white.withOpacity(0.35)),
+            color: Colors.white.withOpacity(0.10),
+            border: Border.all(color: Colors.white.withOpacity(0.28)),
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                Colors.white.withOpacity(0.20),
-                Colors.white.withOpacity(0.08),
+                Colors.white.withOpacity(0.22),
+                Colors.white.withOpacity(0.06),
               ],
             ),
             boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 20, offset: const Offset(0, 10)),
+              BoxShadow(color: Colors.black.withOpacity(0.12), blurRadius: 18, offset: const Offset(0, 8)),
             ],
           ),
           child: Column(
@@ -1133,4 +1830,35 @@ class _WatermarkPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _WatermarkPainter oldDelegate) => oldDelegate.dateTime != dateTime;
+}
+
+// Grid Pattern Painter for ID Card Background
+class _GridPatternPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.grey.withOpacity(0.1)
+      ..strokeWidth = 0.5;
+
+    // Draw vertical lines
+    for (double x = 0; x < size.width; x += 20) {
+      canvas.drawLine(
+        Offset(x, 0),
+        Offset(x, size.height),
+        paint,
+      );
+    }
+
+    // Draw horizontal lines
+    for (double y = 0; y < size.height; y += 20) {
+      canvas.drawLine(
+        Offset(0, y),
+        Offset(size.width, y),
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _GridPatternPainter oldDelegate) => false;
 }

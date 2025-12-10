@@ -188,9 +188,20 @@ class _MainLayoutState extends State<MainLayout> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(isSelected ? activeIcon : icon, color: isSelected ? Colors.black : Colors.grey[400], size: 26),
+            Icon(
+              isSelected ? activeIcon : icon,
+              color: isSelected ? Colors.red[500] : Colors.grey[400],
+              size: 26,
+            ),
             const SizedBox(height: 4),
-            Text(label, style: TextStyle(color: isSelected ? Colors.black : Colors.grey[400], fontSize: 11, fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400)),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? Colors.red[500] : Colors.grey[400],
+                fontSize: 11,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+              ),
+            ),
           ],
         ),
       ),
