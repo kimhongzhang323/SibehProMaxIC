@@ -49,18 +49,8 @@ class _LandingPageState extends State<LandingPage> with SingleTickerProviderStat
     return Scaffold(
       backgroundColor: Colors.white,
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF0E4CFF),
-              Color(0xFF4C3DEB),
-              Color(0xFF0EA6C1),
-              Color(0xFF9B59B6),
-            ],
-            stops: [0.05, 0.35, 0.65, 0.95],
-          ),
+        decoration: BoxDecoration(
+          color: Colors.grey[50],
         ),
         child: SafeArea(
           child: Stack(
@@ -131,14 +121,8 @@ class _LandingPageState extends State<LandingPage> with SingleTickerProviderStat
           style: TextStyle(
             fontSize: 48,
             fontWeight: FontWeight.w800,
-            color: Colors.white.withOpacity(0.95),
+            color: Colors.black,
             letterSpacing: 0.4,
-            shadows: [
-              Shadow(
-                color: Colors.black.withOpacity(0.25),
-                blurRadius: 12,
-              ),
-            ],
           ),
           textAlign: TextAlign.center,
         ),
@@ -148,14 +132,8 @@ class _LandingPageState extends State<LandingPage> with SingleTickerProviderStat
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,
-            color: Colors.white.withOpacity(0.88),
+            color: Colors.grey[600],
             height: 1.3,
-            shadows: [
-              Shadow(
-                color: Colors.black.withOpacity(0.25),
-                blurRadius: 10,
-              ),
-            ],
           ),
           textAlign: TextAlign.center,
         ),
@@ -167,15 +145,15 @@ class _LandingPageState extends State<LandingPage> with SingleTickerProviderStat
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Icon(Icons.close, color: Colors.white.withOpacity(0.9), size: 26),
+        Icon(Icons.close, color: Colors.black54, size: 26),
         Row(
           children: [
-            Icon(Icons.auto_awesome, color: Colors.white.withOpacity(0.9), size: 22),
+            Icon(Icons.auto_awesome, color: Colors.black87, size: 22),
             const SizedBox(width: 6),
             Text(
               'Journey',
               style: TextStyle(
-                color: Colors.white.withOpacity(0.95),
+                color: Colors.black,
                 fontWeight: FontWeight.w700,
                 fontSize: 18,
               ),
@@ -185,12 +163,12 @@ class _LandingPageState extends State<LandingPage> with SingleTickerProviderStat
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white.withOpacity(0.8), width: 1),
+                border: Border.all(color: Colors.black54, width: 1),
               ),
               child: Text(
                 'beta',
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.9),
+                  color: Colors.black87,
                   fontWeight: FontWeight.w600,
                   fontSize: 12,
                 ),

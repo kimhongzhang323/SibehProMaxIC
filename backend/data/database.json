@@ -1,0 +1,214 @@
+{
+    "_default": {},
+    "users": {
+        "1": {
+            "user_id": "default",
+            "full_name": "Ahmad bin Abdullah",
+            "ic_number": "901215-14-5678",
+            "date_of_birth": "1990-12-15",
+            "gender": "Male",
+            "nationality": "Malaysian",
+            "race": "Malay",
+            "religion": "Islam",
+            "marital_status": "Married",
+            "phone": "+60123456789",
+            "phone_secondary": "+60198761234",
+            "email": "ahmad.abdullah@email.com",
+            "email_work": "ahmad@techcorp.my",
+            "address": "No. 123, Jalan Merdeka, Taman Bahagia, 50480 Kuala Lumpur",
+            "address_line1": "No. 123, Jalan Merdeka",
+            "address_line2": "Taman Bahagia",
+            "city": "Kuala Lumpur",
+            "state": "Wilayah Persekutuan",
+            "postcode": "50480",
+            "country": "Malaysia",
+            "address_mailing": "Same as residential",
+            "address_permanent": "Lot 45, Kampung Seri Mawar, 08000 Sungai Petani, Kedah",
+            "passport_number": "A12345678",
+            "passport_expiry": "2028-06-15",
+            "passport_issue_date": "2023-06-15",
+            "passport_issue_place": "Putrajaya",
+            "passport_type": "Ordinary",
+            "passport_pages_remaining": 24,
+            "driving_license_number": "D901215145678",
+            "driving_license_class": [
+                "B2",
+                "D"
+            ],
+            "driving_license_expiry": "2027-12-14",
+            "driving_license_issue_date": "2010-12-15",
+            "vehicle_registration": "WXY 1234",
+            "vehicle_type": "Car",
+            "vehicle_make": "Proton",
+            "vehicle_model": "X70",
+            "vehicle_year": "2022",
+            "road_tax_expiry": "2025-06-30",
+            "insurance_company": "Allianz Malaysia",
+            "insurance_policy": "POL-2024-123456",
+            "insurance_expiry": "2025-06-30",
+            "employer_name": "TechCorp Malaysia Sdn Bhd",
+            "company_name": "TechCorp Malaysia Sdn Bhd",
+            "company_address": "Level 15, Menara KLCC, Jalan Ampang, 50088 Kuala Lumpur",
+            "ssm_number": "1234567-A",
+            "job_title": "Senior Software Engineer",
+            "department": "Engineering",
+            "employee_id": "TC-2018-0456",
+            "employment_type": "Permanent",
+            "employment_start_date": "2018-03-01",
+            "monthly_income": "12000",
+            "annual_income": "156000",
+            "epf_number": "12345678901",
+            "socso_number": "SO-901215-14-5678",
+            "tax_number": "SG12345678901",
+            "pcb_deduction": "1250",
+            "bank_name": "Maybank",
+            "bank_account_number": "1234567890123",
+            "bank_account_type": "Savings",
+            "bank_branch": "KLCC",
+            "bank_swift_code": "MABORJKL",
+            "bank_name_secondary": "CIMB",
+            "bank_account_secondary": "9876543210123",
+            "education_highest": "Bachelor's Degree",
+            "education_institution": "Universiti Malaya",
+            "education_field": "Computer Science",
+            "education_year": "2014",
+            "education_grade": "First Class Honours",
+            "professional_cert": [
+                "AWS Solutions Architect",
+                "Google Cloud Professional",
+                "Certified Scrum Master"
+            ],
+            "languages": [
+                "Malay",
+                "English",
+                "Mandarin"
+            ],
+            "emergency_contact_name": "Fatimah binti Hassan",
+            "emergency_contact_relationship": "Spouse",
+            "emergency_contact_phone": "+60129876543",
+            "emergency_contact_address": "Same as residential",
+            "emergency_contact2_name": "Abdullah bin Ahmad",
+            "emergency_contact2_relationship": "Father",
+            "emergency_contact2_phone": "+60134567890",
+            "spouse_name": "Fatimah binti Hassan",
+            "spouse_ic": "920520-08-1234",
+            "spouse_occupation": "Accountant",
+            "spouse_employer": "Deloitte Malaysia",
+            "num_children": 2,
+            "children_names": [
+                "Muhammad Irfan bin Ahmad",
+                "Nur Aisyah binti Ahmad"
+            ],
+            "children_ages": [
+                5,
+                3
+            ],
+            "blood_type": "O+",
+            "allergies": [
+                "Penicillin"
+            ],
+            "medical_conditions": [],
+            "disabilities": "None",
+            "health_card_number": "MySejahtera-901215145678",
+            "insurance_medical": "Great Eastern TakafulCare",
+            "insurance_medical_policy": "GE-TAK-2024-78901",
+            "vaccination_covid19": [
+                "Pfizer - 2021-06-15",
+                "Pfizer - 2021-07-15",
+                "Pfizer Booster - 2022-03-10"
+            ],
+            "vaccination_status": "Fully Vaccinated + Booster",
+            "ptptn_loan_status": "Fully Paid",
+            "ptptn_amount_total": "45000",
+            "ptptn_amount_remaining": "0",
+            "property_owned": [
+                {
+                    "type": "Apartment",
+                    "address": "Unit 12-5, Condominium Seri Indah, 50480 KL",
+                    "value": "450000",
+                    "loan_bank": "CIMB",
+                    "loan_remaining": "280000"
+                }
+            ],
+            "income_sources": [
+                {
+                    "source": "Employment",
+                    "amount": "12000",
+                    "frequency": "monthly"
+                },
+                {
+                    "source": "Rental",
+                    "amount": "1500",
+                    "frequency": "monthly"
+                },
+                {
+                    "source": "Dividends",
+                    "amount": "3000",
+                    "frequency": "yearly"
+                }
+            ],
+            "birth_cert_uploaded": true,
+            "ic_uploaded": true,
+            "passport_uploaded": true,
+            "photo_uploaded": true,
+            "ssm_cert_uploaded": false,
+            "business_license_uploaded": false,
+            "payslip_uploaded": true,
+            "ea_form_uploaded": true,
+            "bank_statement_uploaded": true,
+            "utility_bill_uploaded": true,
+            "security_level": "verified",
+            "biometric_registered": true,
+            "biometric_type": [
+                "fingerprint",
+                "face"
+            ],
+            "last_login": "2025-12-10T10:30:00",
+            "account_status": "active",
+            "two_factor_enabled": true,
+            "two_factor_method": "authenticator_app",
+            "login_history": [
+                {
+                    "date": "2025-12-10T10:30:00",
+                    "device": "Chrome/Windows",
+                    "ip": "175.139.xxx.xxx",
+                    "location": "Kuala Lumpur"
+                },
+                {
+                    "date": "2025-12-09T08:15:00",
+                    "device": "Mobile App/Android",
+                    "ip": "183.171.xxx.xxx",
+                    "location": "Petaling Jaya"
+                },
+                {
+                    "date": "2025-12-08T19:45:00",
+                    "device": "Chrome/Windows",
+                    "ip": "175.139.xxx.xxx",
+                    "location": "Kuala Lumpur"
+                }
+            ],
+            "security_questions_set": true,
+            "pin_set": true,
+            "trusted_devices": 3,
+            "notifications_email": true,
+            "notifications_sms": true,
+            "notifications_push": true,
+            "language_preference": "english",
+            "timezone": "Asia/Kuala_Lumpur",
+            "gov_services_linked": [
+                "MySejahtera",
+                "MyEG",
+                "LHDN e-Filing",
+                "JPN Online",
+                "MyIMMs"
+            ],
+            "singpass_linked": false,
+            "created_at": "2024-01-15T08:00:00",
+            "updated_at": "2025-12-10T10:30:00",
+            "profile_completion": 95
+        }
+    },
+    "tasks": {},
+    "history": {},
+    "documents": {}
+}

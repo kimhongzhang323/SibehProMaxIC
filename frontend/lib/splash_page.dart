@@ -32,18 +32,8 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF0E4CFF),
-              Color(0xFF3E63EE),
-              Color(0xFF0EA6C1),
-              Color(0xFF9B59B6),
-            ],
-            stops: [0.05, 0.35, 0.65, 0.95],
-          ),
+        decoration: BoxDecoration(
+          color: Colors.grey[50],
         ),
         child: Stack(
           children: [
@@ -67,7 +57,7 @@ class _SplashPageState extends State<SplashPage> with TickerProviderStateMixin {
                   Text(
                     'Redirecting…',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: Colors.black,
                       fontFamily: 'Open Sans',
                       fontWeight: FontWeight.w600,
                       fontSize: 14,

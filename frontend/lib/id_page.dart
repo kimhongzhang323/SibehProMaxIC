@@ -265,21 +265,11 @@ class _IdPageState extends State<IdPage> with TickerProviderStateMixin {
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF0E4CFF),
-              Color(0xFF3E63EE),
-              Color(0xFF0EA6C1),
-              Color(0xFF9B59B6),
-            ],
-            stops: [0.05, 0.35, 0.65, 0.95],
-          ),
+        decoration: BoxDecoration(
+          color: Colors.grey[50],
         ),
         child: _isLoading
-            ? const Center(child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+            ? const Center(child: CircularProgressIndicator(color: Colors.black54, strokeWidth: 2))
             : _idData == null
                 ? _buildEmptyState()
                 : _buildContent(),
@@ -341,7 +331,7 @@ class _IdPageState extends State<IdPage> with TickerProviderStateMixin {
                         style: const TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: Colors.black,
                         ),
                       ),
                       _buildModeToggle(),
@@ -370,9 +360,8 @@ class _IdPageState extends State<IdPage> with TickerProviderStateMixin {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.15),
+        color: Colors.grey[200],
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withOpacity(0.25)),
       ),
       child: Row(children: [_buildToggleButton('ID', Icons.badge, !_isTravelMode), _buildToggleButton('Travel', Icons.flight, _isTravelMode)]),
     );
@@ -393,14 +382,14 @@ class _IdPageState extends State<IdPage> with TickerProviderStateMixin {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: isActive ? Colors.white : Colors.white.withOpacity(0.05),
+          color: isActive ? Colors.white : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
-          boxShadow: isActive ? [BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 6, offset: const Offset(0, 3))] : null,
+          boxShadow: isActive ? [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 6, offset: const Offset(0, 3))] : null,
         ),
         child: Row(children: [
-          Icon(icon, size: 16, color: isActive ? Colors.black : Colors.white.withOpacity(0.7)),
+          Icon(icon, size: 16, color: isActive ? Colors.black : Colors.grey[600]),
           const SizedBox(width: 6),
-          Text(label, style: TextStyle(fontSize: 13, color: isActive ? Colors.black : Colors.white.withOpacity(0.8), fontWeight: isActive ? FontWeight.w700 : FontWeight.w500)),
+          Text(label, style: TextStyle(fontSize: 13, color: isActive ? Colors.black : Colors.grey[600], fontWeight: isActive ? FontWeight.w700 : FontWeight.w500)),
         ]),
       ),
     );
@@ -437,124 +426,109 @@ class _IdPageState extends State<IdPage> with TickerProviderStateMixin {
   }
 
   Widget _buildIcCard() {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(20),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            color: Colors.white.withOpacity(0.12),
-            border: Border.all(color: Colors.white.withOpacity(0.35)),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Colors.white.withOpacity(0.20),
-                Colors.white.withOpacity(0.08),
-              ],
-            ),
-            boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 20, offset: const Offset(0, 10)),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 20, offset: const Offset(0, 8)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
-                        child: Image.asset(
-                          'assets/images/countryFlag/my.png',
-                          width: 32,
-                          height: 22,
-                          fit: BoxFit.cover,
-                          errorBuilder: (c, e, s) => Container(width: 32, height: 22, color: Colors.white.withOpacity(0.2)),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'MALAYSIA',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.95),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 1.2,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.9),
-                      borderRadius: BorderRadius.circular(20),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: Image.asset(
+                      'assets/images/countryFlag/my.png',
+                      width: 32,
+                      height: 22,
+                      fit: BoxFit.cover,
+                      errorBuilder: (c, e, s) => Container(width: 32, height: 22, color: Colors.grey[200]),
                     ),
-                    child: Row(
-                      children: const [
-                        Icon(Icons.verified, color: Colors.green, size: 14),
-                        SizedBox(width: 6),
-                        Text(
-                          'VERIFIED',
-                          style: TextStyle(color: Colors.black87, fontSize: 11, fontWeight: FontWeight.w700),
-                        ),
-                      ],
+                  ),
+                  const SizedBox(width: 8),
+                  const Text(
+                    'MALAYSIA',
+                    style: TextStyle(
+                      color: Colors.black87,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.2,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-              Text(
-                'REPUBLIC OF MALAYSIA',
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.95),
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.5,
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.green.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20),
                 ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'NATIONAL DIGITAL IDENTITY CARD',
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.9),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 18),
-              Text(
-                _idData!['name'] ?? 'Name',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'NRIC number',
-                style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 12, fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                _idData!['id_number'] ?? 'ID',
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.95),
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.2,
+                child: Row(
+                  children: const [
+                    Icon(Icons.verified, color: Colors.green, size: 14),
+                    SizedBox(width: 6),
+                    Text(
+                      'VERIFIED',
+                      style: TextStyle(color: Colors.green, fontSize: 11, fontWeight: FontWeight.w700),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-        ),
+          const SizedBox(height: 16),
+          const Text(
+            'REPUBLIC OF MALAYSIA',
+            style: TextStyle(
+              color: Colors.black,
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'NATIONAL DIGITAL IDENTITY CARD',
+            style: TextStyle(
+              color: Colors.grey[600],
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 18),
+          Text(
+            _idData!['name'] ?? 'Name',
+            style: const TextStyle(
+              color: Colors.black,
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'NRIC number',
+            style: TextStyle(color: Colors.grey[500], fontSize: 12, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            _idData!['id_number'] ?? 'ID',
+            style: const TextStyle(
+              color: Colors.black87,
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.2,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -642,29 +616,29 @@ class _IdPageState extends State<IdPage> with TickerProviderStateMixin {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.12),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.3)),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 12, offset: const Offset(0, 4))],
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.14),
+              color: Colors.grey[100],
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.lock, color: Colors.white, size: 20),
+            child: Icon(Icons.lock, color: Colors.grey[600], size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                const Text(
                   'Verify to reveal',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.95),
+                    color: Colors.black,
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
                   ),
@@ -672,7 +646,7 @@ class _IdPageState extends State<IdPage> with TickerProviderStateMixin {
                 const SizedBox(height: 4),
                 Text(
                   'Tap the button below to verify and view your MyKad QR.',
-                  style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 13, height: 1.3),
+                  style: TextStyle(color: Colors.grey[600], fontSize: 13, height: 1.3),
                 ),
               ],
             ),
@@ -689,9 +663,8 @@ class _IdPageState extends State<IdPage> with TickerProviderStateMixin {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.15),
+          color: Colors.black,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.white.withOpacity(0.3)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -700,7 +673,7 @@ class _IdPageState extends State<IdPage> with TickerProviderStateMixin {
             const SizedBox(width: 8),
             Text(
               _qrUnlocked ? 'Tap to Close QR' : 'Tap to Verify & View QR',
-              style: TextStyle(color: Colors.white.withOpacity(0.95), fontSize: 14, fontWeight: FontWeight.w600),
+              style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
             ),
           ],
         ),
