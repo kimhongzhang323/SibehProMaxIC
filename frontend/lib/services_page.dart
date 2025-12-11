@@ -15,6 +15,9 @@ import 'id_page.dart';
 import 'scanner_page.dart';
 import 'models/quick_action_item.dart';
 import 'widgets/quick_actions_grid.dart';
+import 'package:frontend/pages/ic_dashboard_page.dart';
+import 'package:frontend/pages/rapidkl_page.dart';
+
 
 class ServicesPage extends StatefulWidget {
   const ServicesPage({super.key});
@@ -43,6 +46,13 @@ class _ServicesPageState extends State<ServicesPage> {
         icon: Icons.receipt_long,
         color: Colors.green,
         routeName: 'lhdn'),
+     const QuickActionItem(
+        id: 'rapidkl',
+        label: 'RapidKL',
+        icon: Icons.directions_bus,
+        color: Colors.blueAccent,
+        routeName: 'rapidkl',
+        assetPath: 'assets/images/rapidKL.png'),
   ];
   
   // Available actions pool for adding
@@ -54,6 +64,7 @@ class _ServicesPageState extends State<ServicesPage> {
     const QuickActionItem(id: 'kwsp', label: 'KWSP', icon: Icons.account_balance, color: Colors.indigo, routeName: 'kwsp'),
     const QuickActionItem(id: 'perkeso', label: 'Perkeso', icon: Icons.health_and_safety, color: Colors.orange, routeName: 'perkeso'),
     const QuickActionItem(id: 'moh', label: 'MOH', icon: Icons.medical_services, color: Colors.pink, routeName: 'moh'),
+    const QuickActionItem(id: 'rapidkl', label: 'RapidKL', icon: Icons.directions_bus, color: Colors.blueAccent, routeName: 'rapidkl', assetPath: 'assets/images/rapidKL.png'),
   ];
 
   final List<Map<String, dynamic>> _walletCards = [
@@ -240,25 +251,34 @@ class _ServicesPageState extends State<ServicesPage> {
                   itemCount: _walletCards.length,
                   itemBuilder: (context, index) {
                     final card = _walletCards[index];
-                    return Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 0), // Side margins for carousel effect
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: card['colors'] as List<Color>,
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(24),
-                        boxShadow: [
-                          BoxShadow(
-                            color: (card['colors'] as List<Color>).first.withOpacity(0.3),
-                            blurRadius: 10,
-                            offset: const Offset(0, 5),
+                    return GestureDetector(
+                      onTap: () {
+                        if (card['title'] == 'IC Balance') {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => ICDashboardPage()),
+                          );
+                        }
+                      },
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 0), // Side margins for carousel effect
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: card['colors'] as List<Color>,
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
                           ),
-                        ],
-                      ),
-                      child: Column(
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: [
+                            BoxShadow(
+                              color: (card['colors'] as List<Color>).first.withOpacity(0.3),
+                              blurRadius: 10,
+                              offset: const Offset(0, 5),
+                            ),
+                          ],
+                        ),
+                        child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -324,65 +344,66 @@ class _ServicesPageState extends State<ServicesPage> {
                           ),
                           Row(
                             children: [
-                              GestureDetector(
-                                onTap: () {
-                                  if (card['action'] == 'Reload') {
-                                    showDialog(
-                                      context: context,
-                                      builder: (context) => AlertDialog(
-                                        title: const Text('Reload IC Balance'),
-                                        content: Column(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            ListTile(
-                                              leading: const Icon(Icons.touch_app, color: Colors.blue),
-                                              title: const Text('Auto-debit from TnG eWallet'),
-                                              onTap: () {
-                                                Navigator.pop(context);
-                                                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Auto-debit enabled')));
-                                              },
-                                            ),
-                                            ListTile(
-                                              leading: const Icon(Icons.payment, color: Colors.green),
-                                              title: const Text('Reload from Bank / Card'),
-                                              onTap: () {
-                                                Navigator.pop(context);
-                                                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Redirecting to payment gateway...')));
-                                              },
-                                            ),
-                                          ],
+                              if (card['action'] != null && (card['action'] as String).isNotEmpty)
+                                GestureDetector(
+                                  onTap: () {
+                                    if (card['action'] == 'Reload') {
+                                      showDialog(
+                                        context: context,
+                                        builder: (context) => AlertDialog(
+                                          title: const Text('Reload IC Balance'),
+                                          content: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              ListTile(
+                                                leading: const Icon(Icons.touch_app, color: Colors.blue),
+                                                title: const Text('Auto-debit from TnG eWallet'),
+                                                onTap: () {
+                                                  Navigator.pop(context);
+                                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Auto-debit enabled')));
+                                                },
+                                              ),
+                                              ListTile(
+                                                leading: const Icon(Icons.payment, color: Colors.green),
+                                                title: const Text('Reload from Bank / Card'),
+                                                onTap: () {
+                                                  Navigator.pop(context);
+                                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Redirecting to payment gateway...')));
+                                                },
+                                              ),
+                                            ],
+                                          ),
                                         ),
-                                      ),
-                                    );
-                                  } else {
-                                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${card['action']} tapped for ${card['title']}')));
-                                  }
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.2),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        card['action'] == 'Reload' ? Icons.add : Icons.arrow_forward,
-                                        color: Colors.white, size: 16
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        card['action'],
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
+                                      );
+                                    } else {
+                                       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${card['action']} tapped for ${card['title']}')));
+                                    }
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.2),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          card['action'] == 'Reload' ? Icons.add : Icons.arrow_forward,
+                                          color: Colors.white, size: 16
                                         ),
-                                      ),
-                                    ],
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          card['action'],
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
-                              ),
                               const Spacer(),
                               if (card['isActive'])
                                 Container(
@@ -404,8 +425,9 @@ class _ServicesPageState extends State<ServicesPage> {
                           ),
                         ],
                       ),
-                    );
-                  },
+                    ),
+                  );
+                },
                 ),
               ),
               const SizedBox(height: 12),
@@ -514,6 +536,8 @@ class _ServicesPageState extends State<ServicesPage> {
                             }
                          } else if (item.routeName == 'lhdn') {
                            Navigator.push(context, MaterialPageRoute(builder: (context) => const LHDNPage()));
+                         } else if (item.routeName == 'rapidkl') {
+                           Navigator.push(context, MaterialPageRoute(builder: (context) => const RapidKLPage()));
                          } else {
                            // Handle generic routes or mock pages
                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Tapped ${item.label}')));

@@ -4,7 +4,7 @@ import 'id_page.dart';
 import 'services_page.dart';
 import 'chat_page.dart';
 import 'landing_page.dart';
-import 'notification_page.dart';
+import 'notification_page.dart'; // Contains NotificationService
 import 'profile_page.dart';
 import 'splash_page.dart';
 import 'onboarding_page.dart';
@@ -210,7 +210,22 @@ class _MainLayoutState extends State<MainLayout> {
               children: [
                 _buildNavItem(0, Icons.wallet_outlined, Icons.wallet, 'Home'),
                 _buildNavItem(1, Icons.grid_view_outlined, Icons.grid_view, 'Services'),
-                 _buildNavItem(2, Icons.notifications_outlined, Icons.notifications, 'Inbox'),
+                
+                // AnimatedBuilder to listen for notification updates
+                AnimatedBuilder(
+                  animation: NotificationService(),
+                  builder: (context, _) {
+                    final unreadCount = NotificationService().unreadCount;
+                    return _buildNavItem(
+                      2, 
+                      Icons.notifications_outlined, 
+                      Icons.notifications, 
+                      'Inbox',
+                      badgeCount: unreadCount
+                    );
+                  }
+                ),
+
                 _buildNavItem(3, Icons.chat_bubble_outline, Icons.chat_bubble, 'Assistant'),
                  _buildNavItem(4, Icons.person_outline, Icons.person, 'Profile'),
               ],
@@ -222,18 +237,49 @@ class _MainLayoutState extends State<MainLayout> {
   }
 
   Widget _buildNavItem(
-      int index, IconData icon, IconData activeIcon, String label) {
+      int index, IconData icon, IconData activeIcon, String label, {int badgeCount = 0}) {
     final isSelected = _currentIndex == index;
     return GestureDetector(
       onTap: () => setState(() => _currentIndex = index),
       behavior: HitTestBehavior.opaque,
       child: SizedBox(
-        width: 60, // Reduced from 70 to fit 5 items
+        width: 60,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(isSelected ? activeIcon : icon,
-                color: isSelected ? Colors.black : Colors.grey[400], size: 26),
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Icon(isSelected ? activeIcon : icon,
+                    color: isSelected ? Colors.black : Colors.grey[400], size: 26),
+                
+                if (badgeCount > 0)
+                  Positioned(
+                    right: -2,
+                    top: -2,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                      constraints: const BoxConstraints(
+                        minWidth: 14,
+                        minHeight: 14,
+                      ),
+                      child: Text(
+                        badgeCount > 9 ? '9+' : badgeCount.toString(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
             const SizedBox(height: 4),
             Text(label,
                 style: TextStyle(

@@ -21,24 +21,21 @@ class _PaymentPageState extends State<PaymentPage> {
   // FPX State
   String? _selectedBank;
   final List<Map<String, String>> _banks = [
-    {'id': 'maybank', 'name': 'Maybank2u', 'color': '#FFC800'},
-    {'id': 'cimb', 'name': 'CIMB Clicks', 'color': '#ED1C24'},
-    {'id': 'pbb', 'name': 'Public Bank', 'color': '#CD1316'},
-    {'id': 'rhb', 'name': 'RHB Now', 'color': '#0067AC'},
-    {'id': 'hongleong', 'name': 'Hong Leong', 'color': '#004892'},
-    {'id': 'ambank', 'name': 'AmBank', 'color': '#ED1C24'},
-    {'id': 'islam', 'name': 'Bank Islam', 'color': '#A6192E'},
-    {'id': 'uob', 'name': 'UOB', 'color': '#003366'},
+    {'id': 'maybank', 'name': 'Maybank2u', 'asset': 'assets/images/maybank.jpeg'},
+    {'id': 'cimb', 'name': 'CIMB Clicks', 'asset': 'assets/images/cimb.jpg'},
+    {'id': 'rhb', 'name': 'RHB Now', 'asset': 'assets/images/RHB_Logo.svg.png'},
+    // Fallbacks or if you add more assets later
+    // {'id': 'pbb', 'name': 'Public Bank', 'asset': 'assets/images/pbb.png'}, 
   ];
 
   // E-Wallet State
   String? _selectedWallet;
   final List<Map<String, String>> _wallets = [
-    {'id': 'tng', 'name': 'TnG eWallet', 'color': '#015ABF'},
-    {'id': 'grab', 'name': 'GrabPay', 'color': '#00B14F'},
-    {'id': 'boost', 'name': 'Boost', 'color': '#EE3124'},
-    {'id': 'shopee', 'name': 'ShopeePay', 'color': '#EE4D2D'},
-    {'id': 'mae', 'name': 'MAE', 'color': '#FFC800'},
+    {'id': 'tng', 'name': 'TnG eWallet', 'asset': 'assets/images/TnG.png'},
+    {'id': 'grab', 'name': 'GrabPay', 'asset': 'assets/images/grabpay.png'},
+    {'id': 'boost', 'name': 'Boost', 'asset': 'assets/images/boost.png'},
+    {'id': 'shopee', 'name': 'ShopeePay', 'asset': 'assets/images/shopeepay.png'},
+    {'id': 'mae', 'name': 'MAE', 'asset': 'assets/images/logo_MAE.webp'},
   ];
 
   final _formKey = GlobalKey<FormState>();
@@ -110,8 +107,8 @@ class _PaymentPageState extends State<PaymentPage> {
                     icon: Icons.credit_card,
                     child: _buildCardForm(),
                     logos: [
-                      _buildLogo('VISA'),
-                      _buildLogo('Master'),
+                      _buildLogo('assets/images/visa.png'),
+                      _buildLogo('assets/images/mastercard.jpg'),
                     ],
                   ),
                   
@@ -128,7 +125,7 @@ class _PaymentPageState extends State<PaymentPage> {
                       onSelect: (id) => setState(() => _selectedBank = id)
                     ),
                     logos: [
-                      const Text('FPX', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange, fontSize: 12)),
+                     Image.asset('assets/images/Logo-FPX.png', height: 16, errorBuilder: (_,__,___)=>const Text('FPX', style: TextStyle(fontWeight: FontWeight.bold))),
                     ],
                   ),
 
@@ -145,8 +142,8 @@ class _PaymentPageState extends State<PaymentPage> {
                       onSelect: (id) => setState(() => _selectedWallet = id)
                     ),
                     logos: [
-                      _buildLogo('TnG'),
-                      _buildLogo('Grab'),
+                      _buildLogo('assets/images/TnG.png'),
+                      _buildLogo('assets/images/grabpay.png'),
                     ],
                   ),
                   
@@ -185,25 +182,37 @@ class _PaymentPageState extends State<PaymentPage> {
                     ),
                   ),
                   
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 40),
                   
-                  Center(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.lock, size: 12, color: Colors.grey[500]),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Secured by PayNet & Stripe',
-                          style: TextStyle(
-                            color: Colors.grey[500],
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
+                  Column(
+                    children: [
+                      Text(
+                        'Licensed and regulated by\nBank Negara Malaysia and Securities Commission Malaysia.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.grey[400],
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
                         ),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          _buildFooterLogo('assets/images/tngDigital.jpg', height: 24),
+                          const SizedBox(width: 16),
+                          Container(width: 1, height: 16, color: Colors.grey[300]),
+                          const SizedBox(width: 16),
+                          _buildFooterLogo('assets/images/stripe.png', height: 20), // Assumed asset
+                          const SizedBox(width: 16),
+                          Container(width: 1, height: 16, color: Colors.grey[300]),
+                          const SizedBox(width: 16),
+                          _buildFooterLogo('assets/images/alipay+.png', height: 20),
+                        ],
+                      ),
+                    ],
                   ),
+                  const SizedBox(height: 20),
                 ],
               ),
             ),
@@ -213,16 +222,24 @@ class _PaymentPageState extends State<PaymentPage> {
     );
   }
 
-  Widget _buildLogo(String text) {
+  Widget _buildFooterLogo(String asset, {double height = 20}) {
+    return Image.asset(
+      asset,
+      height: height,
+      color: Colors.grey[400], // Grayscale effect for footer
+      colorBlendMode: BlendMode.modulate, // Optional: adjust blend mode as needed or simple opacity
+      errorBuilder: (_,__,___) => const SizedBox(),
+    );
+  }
+
+  Widget _buildLogo(String assetPath) {
     return Padding(
-      padding: const EdgeInsets.only(left: 4),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey[200]!),
-          borderRadius: BorderRadius.circular(2),
-        ),
-        child: Text(text, style: const TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Colors.grey)),
+      padding: const EdgeInsets.only(left: 8),
+      child: Image.asset(
+        assetPath,
+        width: 32,
+        height: 20,
+        errorBuilder: (context, error, stackTrace) => const SizedBox(),
       ),
     );
   }
@@ -370,9 +387,9 @@ class _PaymentPageState extends State<PaymentPage> {
           physics: const NeverScrollableScrollPhysics(),
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 3,
-            childAspectRatio: 2.2,
-            crossAxisSpacing: 8,
-            mainAxisSpacing: 8,
+            childAspectRatio: 1.5,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
           ),
           itemCount: items.length,
           itemBuilder: (context, index) {
@@ -382,24 +399,28 @@ class _PaymentPageState extends State<PaymentPage> {
             return GestureDetector(
               onTap: () => onSelect(item['id']!),
               child: Container(
+                padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: isSelected ? const Color(0xFFE8EAF6) : Colors.white,
+                  color: isSelected ? Colors.white : Colors.white,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                     color: isSelected ? const Color(0xFF3F51B5) : Colors.grey[300]!,
-                     width: 1.5,
+                     color: isSelected ? const Color(0xFF3F51B5) : Colors.grey[200]!,
+                     width: isSelected ? 2 : 1,
                   ),
+                  boxShadow: isSelected ? [BoxShadow(color: Colors.blue.withOpacity(0.1), blurRadius: 4)] : null,
                 ),
                 alignment: Alignment.center,
-                child: Text(
-                  item['name']!,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    color: isSelected ? const Color(0xFF3F51B5) : Colors.grey[800],
-                  ),
-                ),
+                child: item['asset'] != null 
+                  ? Image.asset(item['asset']!, fit: BoxFit.contain)
+                  : Text(
+                      item['name']!,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: isSelected ? const Color(0xFF3F51B5) : Colors.grey[800],
+                      ),
+                    ),
               ),
             );
           },

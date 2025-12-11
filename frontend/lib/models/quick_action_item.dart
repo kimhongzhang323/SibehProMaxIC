@@ -6,6 +6,7 @@ class QuickActionItem {
   final IconData icon;
   final Color color;
   final String routeName;
+  final String? assetPath;
   final Map<String, dynamic>? arguments;
 
   const QuickActionItem({
@@ -14,6 +15,7 @@ class QuickActionItem {
     required this.icon,
     required this.color,
     required this.routeName,
+    this.assetPath,
     this.arguments,
   });
 
@@ -23,6 +25,7 @@ class QuickActionItem {
         'iconCode': icon.codePoint,
         'colorValue': color.value,
         'routeName': routeName,
+        'assetPath': assetPath,
         'arguments': arguments,
       };
 
@@ -32,6 +35,7 @@ class QuickActionItem {
         icon: IconData(json['iconCode'], fontFamily: 'MaterialIcons'),
         color: Color(json['colorValue']),
         routeName: json['routeName'],
+        assetPath: json['assetPath'],
         arguments: json['arguments'],
       );
 }

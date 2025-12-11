@@ -207,7 +207,12 @@ class _QuickActionsGridState extends State<QuickActionsGrid> with SingleTickerPr
                                     color: item.color.withAlpha(25), // Use withAlpha for simple opacity
                                     borderRadius: BorderRadius.circular(16),
                                   ),
-                                  child: Icon(item.icon, color: item.color, size: 26),
+                                  child: item.assetPath != null
+                                      ? Padding(
+                                          padding: const EdgeInsets.all(12),
+                                          child: Image.asset(item.assetPath!, fit: BoxFit.contain),
+                                        )
+                                      : Icon(item.icon, color: item.color, size: 26),
                                 ),
                                 const SizedBox(height: 8),
                                 Material(
