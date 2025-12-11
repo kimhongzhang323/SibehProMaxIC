@@ -5,8 +5,7 @@ import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-
-import 'package:shared_preferences/shared_preferences.dart';
+import 'services/secure_storage_service.dart';
 import 'api_service.dart';
 
 class IdPage extends StatefulWidget {
@@ -147,15 +146,15 @@ class _IdPageState extends State<IdPage> with TickerProviderStateMixin {
   }
 
   Future<void> _loadIdData() async {
-    final prefs = await SharedPreferences.getInstance();
-    final cachedData = prefs.getString('digital_id_data');
+    final secureStorage = SecureStorageService();
+    final cachedData = await secureStorage.read('digital_id_data');
     if (cachedData != null) {
       setState(() { _idData = jsonDecode(cachedData); _isLoading = false; });
       _animationController.forward();
     }
     try {
       final freshData = await _apiService.getDigitalId();
-      await prefs.setString('digital_id_data', jsonEncode(freshData));
+      await secureStorage.write('digital_id_data', jsonEncode(freshData));
       if (mounted) {
         setState(() {
           _idData = freshData;
@@ -204,6 +203,65 @@ class _IdPageState extends State<IdPage> with TickerProviderStateMixin {
     } else {
       if (!_qrUnlocked) _toggleQrReveal();
     }
+  }
+
+  Future<void> _verifyAge() async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+    
+    final result = await _apiService.generateProof('age_over_18');
+    if (!mounted) return;
+    Navigator.pop(context); // Close loading
+    
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                result['result'] == true ? Icons.check_circle : Icons.error,
+                size: 64,
+                color: result['result'] == true ? Colors.green : Colors.red,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                result['result'] == true ? 'Age Verified' : 'Verification Failed',
+                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              if (result['result'] == true)
+                Text(
+                  'Verified by DigitalID Government CA\n${result['timestamp']}',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.black,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Close'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Color _getExpiryColor(String expiryDateStr) {
@@ -1774,7 +1832,28 @@ class _IdPageState extends State<IdPage> with TickerProviderStateMixin {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.12), blurRadius: 16, offset: const Offset(0, 8))],
       ),
-      child: Column(children: [_buildDetailRow('Country', _idData!['country'] ?? 'N/A'), _buildDetailRow('Valid Until', _idData!['valid_until'] ?? 'N/A', valueColor: expiryColor), _buildDetailRow('Status', 'Active', valueColor: Colors.green)]),
+      child: Column(
+        children: [
+          _buildDetailRow('Country', _idData!['country'] ?? 'N/A'),
+          _buildDetailRow('Valid Until', _idData!['valid_until'] ?? 'N/A', valueColor: expiryColor),
+          _buildDetailRow('Status', 'Active', valueColor: Colors.green),
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: _verifyAge,
+              icon: const Icon(Icons.shield_outlined, size: 18),
+              label: const Text('Verify Age > 18 (Privacy Mode)'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.black,
+                side: const BorderSide(color: Colors.black12),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

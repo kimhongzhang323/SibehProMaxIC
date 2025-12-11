@@ -1,8 +1,22 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:crypto/crypto.dart';
 
 class ApiService {
   static const String _backendUrl = 'http://127.0.0.1:8000';
+  static const String _secretKey = 'my-secret-key-123'; // Matches backend
+
+  Map<String, String> _getSecurityHeaders(String method, String path, String body) {
+    final timestamp = DateTime.now().millisecondsSinceEpoch.toString();
+    final stringToSign = '$method:$path:$timestamp:$body';
+    final hmacSha256 = Hmac(sha256, utf8.encode(_secretKey));
+    final digest = hmacSha256.convert(utf8.encode(stringToSign));
+    return {
+      'X-Timestamp': timestamp,
+      'X-Signature': digest.toString(),
+      'Content-Type': 'application/json',
+    };
+  }
 
   Future<Map<String, dynamic>> chat(String message, {String language = 'english'}) async {
     try {
@@ -45,7 +59,9 @@ class ApiService {
 
   Future<Map<String, dynamic>> getDigitalId() async {
     try {
-      final response = await http.get(Uri.parse('$_backendUrl/user/id'));
+      final uri = Uri.parse('$_backendUrl/user/id');
+      final headers = _getSecurityHeaders('GET', uri.path, '');
+      final response = await http.get(uri, headers: headers);
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
       }
@@ -72,5 +88,35 @@ class ApiService {
     } catch (e) {
       throw Exception('Payment failed: $e');
     }
+  }
+
+  Future<Map<String, dynamic>> generateProof(String attribute) async {
+    try {
+      final uri = Uri.parse('$_backendUrl/security/generate_proof');
+      final body = jsonEncode({'attribute': attribute});
+      final headers = _getSecurityHeaders('POST', uri.path, body);
+      final response = await http.post(uri, headers: headers, body: body);
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+    } catch (e) {
+      // return error
+    }
+    return {'result': false, 'timestamp': ''};
+  }
+
+  Future<bool> checkRevocationStatus() async {
+    try {
+      final uri = Uri.parse('$_backendUrl/security/status');
+      final headers = _getSecurityHeaders('GET', uri.path, '');
+      final response = await http.get(uri, headers: headers);
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['status'] == 'revoked';
+      }
+    } catch (e) {
+      return false; 
+    }
+    return false;
   }
 }

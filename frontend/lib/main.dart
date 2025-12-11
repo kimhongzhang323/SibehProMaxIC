@@ -8,6 +8,8 @@ import 'notification_page.dart'; // Contains NotificationService
 import 'profile_page.dart';
 import 'splash_page.dart';
 import 'onboarding_page.dart';
+import 'api_service.dart';
+import 'services/secure_storage_service.dart';
 
 void main() {
   runApp(const MyApp());
@@ -57,6 +59,24 @@ class _AppWrapperState extends State<AppWrapper> {
   }
 
   Future<void> _checkAppStatus() async {
+    // Security Check
+    final isRevoked = await ApiService().checkRevocationStatus();
+    if (isRevoked) {
+      await SecureStorageService().deleteAll();
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+      
+      if (!mounted) return;
+      setState(() {
+        _showLanding = true;
+        _showVerification = false;
+        _showSplash = false;
+        _isLoading = false;
+        _cachedUserName = null;
+      });
+      return;
+    }
+
     final prefs = await SharedPreferences.getInstance();
     final landingSeen = prefs.getBool('landing_page_seen') ?? false;
     final onboardingComplete = prefs.getBool('onboarding_complete') ?? false;
