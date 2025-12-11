@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MyIMMS - eServices</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Import Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <header class="top-header">
+        <div class="container header-content">
+            <div class="logos">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/2/26/Coat_of_arms_of_Malaysia.svg" alt="Jata Negara" class="coat-arms">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/f/fa/Jabatan_Imigresen_Malaysia_Logo.png" alt="Jabatan Imigresen" class="jabatan-logo">
+                <div class="header-text">
+                    <h1>MyIMMS - eServices</h1>
+                    <h2>JABATAN IMIGRESEN MALAYSIA</h2>
+                </div>
+            </div>
+            <div class="date-time">
+                <span id="datetime">Selasa, Mei 17, 2022 | 02:12:51 PM</span>
+            </div>
+        </div>
+    </header>
+
+    <div class="main-nav">
+        <div class="container">
+            <a href="#" class="active"><i class="fas fa-home"></i> UTAMA</a>
+            <a href="#"><i class="fas fa-list"></i> LOG MASUK</a>
+        </div>
+    </div>
+
+    <div class="lang-bar container">
+        <span>Bahasa Melayu | English</span>
+    </div>
+
+    <div class="banner">
+        MyOnline Pasport - PERMOHONAN PASPORT MALAYSIA ANTARABANGSA (PMA)
+    </div>
+
+    <div class="container content">
+        <p class="alert-text">MAKLUMAN : Pasport Hilang atau Rosak tidak dibenarkan mohon secara atas talian.</p>
+
+        <div class="section-title">KATEGORI PERMOHONAN</div>
+
+        <div class="form-group row">
+            <label class="col-label">Sila Tanda</label>
+            <div class="col-input">
+                <div class="radio-option selected">
+                    <input type="radio" name="applicant_type" checked>
+                    <label>PEMOHON 18 TAHUN KE ATAS</label>
+                </div>
+                <div class="radio-option">
+                    <input type="radio" name="applicant_type">
+                    <label>PEMOHON DI BAWAH 18 TAHUN</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-title">MAKLUMAT CARIAN</div>
+
+        <!-- Journey Button -->
+        <div class="journey-fill-container">
+            <button id="btn-journey-fill" class="journey-btn">
+                <i class="fas fa-bolt"></i> Fill with Journey
+            </button>
+            <span class="journey-tooltip">Auto-fill details using your Journey App</span>
+        </div>
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label>No Dokumen</label>
+                <input type="text" id="doc_no" placeholder="(Contoh : A1234567)">
+                <small>(Contoh : A1234567)</small>
+            </div>
+            <div class="form-group">
+                <label>Jenis Dokumen</label>
+                <select id="doc_type">
+                    <option value="">Sila Pilih</option>
+                    <option value="PMA">Passport Malaysia Antarabangsa</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>No Pengenalan Semasa</label>
+                <input type="text" id="ic_no" placeholder="(Example : 601234567891)">
+                <small>(Example : 601234567891)</small>
+            </div>
+            <div class="form-group">
+                <label>Kategori</label>
+                <select id="category">
+                    <option value="">Sila Pilih</option>
+                    <option value="RENEWAL">Pembaharuan</option>
+                    <option value="NEW">Permohonan Baru</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="actions">
+            <button class="btn-search">Cari</button>
+            <button class="btn-reset">Semula</button>
+        </div>
+    </div>
+
+    <!-- Modal for Scan -->
+    <div id="scan-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <div class="modal-header">
+                <div class="journey-brand">
+                    <i class="fas fa-auto-awesome"></i> Journey
+                </div>
+                <h3>Scan to Auto-fill</h3>
+                <p>Open your Journey App and scan this QR code to securely fill your information.</p>
+            </div>
+            <div class="qr-container">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=journey://autofill/demo-session-123" alt="Scan QR">
+                <div class="scan-anim"></div>
+            </div>
+            <div class="modal-footer">
+                <p class="status-text">Waiting for scan...</p>
+                <button id="btn-simulate-scan" class="simulate-btn">(Demo) Simulate Mobile Scan</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
